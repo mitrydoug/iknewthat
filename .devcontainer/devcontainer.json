@@ -10,7 +10,7 @@
     "vscode": {
       "settings": {},
       "extensions": [
-        "trufflesuite-csi.truffle-vscode"
+        "nomicfoundation.hardhat-solidity"
       ]
     }
   }
