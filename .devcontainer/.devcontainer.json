@@ -1,14 +1,11 @@
 //devcontainer.json
 {
-  "name": "Node.js",
-
+  "name": "IKnewThat",
   "build": {
     "dockerfile": "Dockerfile"
   },
-
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
-
   "customizations": {
     "vscode": {
       "settings": {},
