@@ -4,6 +4,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "runArgs": ["--env-file","secrets.env"],
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
   "customizations": {

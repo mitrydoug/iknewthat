@@ -1,1 +1,5 @@
+/artifacts
+/cache
 /node_modules
+/secrets.env
+/ignition/deployments
