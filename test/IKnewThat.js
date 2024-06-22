@@ -7,12 +7,16 @@ const {
 describe("IKnewThat contract", function () {
 
     async function deployFixture() {
-        // Get the Signers here.
+        // Get the ContractFactory and Signers here.
+        const _iKnewThat = await ethers.getContractFactory("IKnewThat");
         const [owner, addr1, addr2] = await ethers.getSigners();
-
-        const iKnewThat = await ethers.deployContract("IKnewThat");
     
-        await iKnewThat.waitForDeployment();
+        // To deploy our contract, we just have to call Token.deploy() and await
+        // for it to be deployed(), which happens onces its transaction has been
+        // mined.
+        const iKnewThat = await _iKnewThat.deploy();
+    
+        await iKnewThat.deployed();
     
         // Fixtures can return anything you consider useful for your tests
         return { iKnewThat, owner, addr1, addr2 };
@@ -21,7 +25,7 @@ describe("IKnewThat contract", function () {
     it("Should allow commitments", async function () {
         const { iKnewThat, owner } = await loadFixture(deployFixture);
 
-        const hash = ethers.ZeroHash;
+        const hash = ethers.constants.HashZero;
         await iKnewThat.commit(hash);
 
         let claim = await iKnewThat.getClaim(hash) 
@@ -31,7 +35,7 @@ describe("IKnewThat contract", function () {
     it("Should disallow overwriting commitments", async function() {
         const { iKnewThat, _, other } = await loadFixture(deployFixture);
 
-        const hash = ethers.ZeroHash;
+        const hash = ethers.constants.HashZero;
         await iKnewThat.commit(hash);
 
         // repeated claims don't work
@@ -45,7 +49,7 @@ describe("IKnewThat contract", function () {
         const dataLoc = "/path/to/data";
         const nonce = 42;
 
-        const hash = ethers.solidityPackedKeccak256(["string", "uint"], [dataLoc, nonce]);
+        const hash = ethers.utils.solidityKeccak256(["string", "uint"], [dataLoc, nonce]);
         await iKnewThat.commit(hash);
         await iKnewThat.reveal(hash, dataLoc, nonce);
 
@@ -61,7 +65,7 @@ describe("IKnewThat contract", function () {
         const dataLoc = "/path/to/data";
         const nonce = 42;
 
-        const hash = ethers.solidityPackedKeccak256(["string", "uint"], [dataLoc, nonce]);
+        const hash = ethers.utils.solidityKeccak256(["string", "uint"], [dataLoc, nonce]);
         await iKnewThat.commit(hash);
         expect(iKnewThat.reveal(hash, dataLoc, 0)).to.be.revertedWith("Hash does not match commitment");
         expect(iKnewThat.reveal(hash, "/path/to/other/data", nonce)).to.be.revertedWith("Hash does not match commitment");
@@ -73,7 +77,7 @@ describe("IKnewThat contract", function () {
         const dataLoc = "/path/to/data";
         const nonce = 42;
 
-        const hash = ethers.solidityPackedKeccak256(["string", "uint"], [dataLoc, nonce]);
+        const hash = ethers.utils.solidityKeccak256(["string", "uint"], [dataLoc, nonce]);
         await iKnewThat.commit(hash);
         expect(iKnewThat.connect(other).reveal(hash, dataLoc, nonce)).to.be.revertedWith("Caller is not claimant");
     });
