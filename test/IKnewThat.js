@@ -2,7 +2,7 @@ const { expect } = require("chai");
 
 const {
     loadFixture,
-} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+} = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("IKnewThat contract", function () {
 
