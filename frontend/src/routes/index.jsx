@@ -7,15 +7,15 @@ export async function lookup({ request }) {
 
 export default function Index() {
   
-    return (
-      <Form method="post" id="contact-form">
-          <input
-            placeholder="Claim commitment ..."
-            aria-label="commitment"
-            type="text"
-            name="commitment"
-          />
-          <button type="submit">Lookup</button>
-      </Form>
-    );
-  }
+  return (
+    <Form method="post" id="contact-form">
+        <input
+          placeholder="Claim commitment ..."
+          aria-label="commitment"
+          type="text"
+          name="commitment"
+        />
+        <button type="submit">Lookup</button>
+    </Form>
+  );
+}

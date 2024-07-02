@@ -22,6 +22,10 @@ contract IKnewThat {
 
     }
 
+    function something() pure external returns (int) {
+        return 42;
+    }
+
     function commit(bytes32 commitment)
         external
     {
