@@ -11,7 +11,7 @@ export async function loader({ params }) {
 }
 
 
-export default function Contact() {
+export default function Claim() {
   const { commitHash, claim } = useLoaderData();
   const commitTime = new Date(claim.publishTime.toNumber()*1000);
 

@@ -7,7 +7,7 @@ import {
 import './index.css'
 import ErrorPage from "./error-page";
 
-import Root, { loader as rootLoader, action as rootAction } from "./routes/root";
+import Root from "./routes/root";
 import Index, { lookup as indexLookup } from "./routes/index";
 import Claim, { loader as claimLoader }from "./routes/claim";
 
@@ -17,8 +17,6 @@ const router = createBrowserRouter([
     path: "/",
     element: <Root />,
     errorElement: <ErrorPage />,
-    loader: rootLoader,
-    action: rootAction,
     children: [
       {
         index: true,
