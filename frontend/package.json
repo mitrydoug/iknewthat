@@ -16,7 +16,13 @@
     "ethers": "^5.4.7",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.24.0",
-    "sort-by": "^1.2.0"
+    "sort-by": "^1.2.0",
+    "helia": "^4.2.4",
+    "@helia/car": "^3.1.5",
+    "@helia/unixfs": "^3.0.6",
+    "@ipld/car":"^5.3.2",
+    "react-confirm": "^0.3.0-7",
+    "react-bootstrap": "^2.10.4"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

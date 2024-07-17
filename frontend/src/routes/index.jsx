@@ -5,10 +5,12 @@ export async function lookup({ request }) {
     return redirect(`/claim/${formData.commitment}`);
 }
 
-export default function Index() {
+export default function Index({ iKnewThat }) {
   
+  console.log(iKnewThat);
+
   return (
-    <Form method="post" id="contact-form">
+    <Form method="post" id="search-form">
         <input
           placeholder="Claim commitment ..."
           aria-label="commitment"
