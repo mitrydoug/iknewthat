@@ -151,7 +151,8 @@ table {
 }
 
 .state-revealed {
-    background-color: darkgreen;
+    background-color: green;
+    color: lightgreen;
 }
 
 .state-concealed {

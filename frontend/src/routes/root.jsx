@@ -27,6 +27,9 @@ export default function Root() {
           <Link to="/claim/create">
             <button>Make Claim</button>
           </Link>
+          <Link to="/claim/reveal">
+            <button>Reveal Claim</button>
+          </Link>
         </div>
       </div>
       <div id="content" className="content">

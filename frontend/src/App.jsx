@@ -11,6 +11,7 @@ import ErrorPage from "./error-page";
 import Root, { lookup as indexLookup } from "./routes/root";
 import Claim, { loader as claimLoader } from "./routes/claim";
 import CreateClaim, { createClaim } from "./routes/create";
+import RevealClaim, { revealClaim } from "./routes/reveal";
 
 
 export default function App() {
@@ -46,6 +47,11 @@ export default function App() {
           path: "claim/create",
           element: <CreateClaim />,
           action: createClaim(iKnewThat),
+        },
+        {
+          path: "claim/reveal",
+          element: <RevealClaim />,
+          action: revealClaim(iKnewThat),
         },
       ],
     },

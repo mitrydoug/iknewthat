@@ -30,6 +30,19 @@ describe("IKnewThat contract", function () {
 
         let claim = await iKnewThat.getClaim(hash) 
         expect(claim.claimant).to.equal(owner.address);
+        expect(claim.id).to.equal(0);
+    });
+
+    it("Should issue consecutive claim ids", async function () {
+        const { iKnewThat, owner } = await loadFixture(deployFixture);
+
+        const hash0 = ethers.constants.HashZero;
+        const hash1 = "0x1111111111111111111111111111111111111111111111111111111111111111";
+        await iKnewThat.commit(hash0);
+        await iKnewThat.commit(hash1);
+
+        let claim1 = await iKnewThat.getClaim(hash1)
+        expect(claim1.id).to.equal(1);
     });
 
     it("Should disallow overwriting commitments", async function() {

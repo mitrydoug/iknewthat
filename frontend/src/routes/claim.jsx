@@ -1,12 +1,24 @@
 import { useLoaderData } from "react-router-dom";
 import { timeDeltaFormat } from "../utils";
 
+import { createHelia } from 'helia'
+// import { car } from '@helia/car'
+
+import { unixfs } from '@helia/unixfs'
+
 
 export const loader = (iKnewThat) => async ({ params }) => {
   console.log(params.commitHash);
   const claim = await iKnewThat.getClaim(params.commitHash);
   // const something = await iKnewThat.something();
   console.log(claim);
+
+  const helia = await createHelia();
+  const heliaFs = unixfs(helia);
+
+  const cidStr = claim.dataLoc;
+  console.log(cidStr);
+
   return { commitHash: params.commitHash, claim };
 }
 

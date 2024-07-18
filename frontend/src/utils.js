@@ -19,7 +19,7 @@ export const timeDeltaFormat = (dateTime) => {
     if(hours < 2) {
         return "an hour ago";
     } else if(Math.round(hours) < 24) {
-        return Math.round(minutes) + " hours ago";
+        return Math.round(hours) + " hours ago";
     }
 
     const days = hours / 24;
