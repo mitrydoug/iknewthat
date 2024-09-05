@@ -39,17 +39,29 @@ button {
     margin-right: auto;
 }
 
+#logo-div {
+    margin-right: 20px;
+    vertical-align: top;
+}
+
 #search-form {
-    display: inline;
     margin-right: 20px;
 }
 
+#search-form-div {
+    padding-top: 12px;
+}
+
 #search-bar {
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     max-width: fit-content;
     margin-left: auto;
     margin-right: auto;
+}
+
+#search-bar * {
+    display: inline-block;
 }
 
 #claim {
@@ -142,9 +154,9 @@ table {
     opacity: 1;
 }
 
-.state-revealed, .state-concealed {
-    margin: 10px 10px 10px 0px;
-    padding: 8px 15px;
+.state-revealed, .state-concealed, .state-pending {
+    margin: 10px 10px 0px 0px;
+    padding: 6px 15px;
     border-radius: 30px;
     font-weight: bold;
     font-size: 1.1em;
@@ -160,6 +172,37 @@ table {
     color: whitesmoke;
 }
 
+.state-pending {
+    background-color: white;
+    color: darkgray;
+    border: 2px solid darkgray;
+}
+
 span {
     display: inline-block;
+}
+
+#logo {
+    max-width: 15rem;
+}
+
+#attachments-div a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#attachments-div div {
+    display: block;
+    padding: 5px 15px;
+}
+
+#attachments-div div:hover {
+    background-color: lightgrey;
+}
+
+#description-div {
+    border-radius: 3px;
+    border: 1px solid #b5b5b5;
+    padding: 15px;
+    margin: 15px 0px;
 }

@@ -9,7 +9,6 @@ import ErrorPage from "./error-page";
 import App from "./App";
 
 
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

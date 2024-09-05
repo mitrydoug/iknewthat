@@ -1,18 +1,18 @@
 import React from "react";
 import { Form, redirect, useOutletContext } from "react-router-dom";
 // import { getIPFS } from "../ipfs";
-import { getIKnewThat } from "../iknewthat";
 
 import { ethers } from "ethers";
 
 // helia
-import { createHelia } from 'helia'
-import { car } from '@helia/car'
 import { unixfs } from '@helia/unixfs'
 import { CarWriter } from '@ipld/car'
+import { car } from '@helia/car'
 
 import { createConfirmation } from 'react-confirm';
 import CreateConfirmation from "../components/CreateConfirmation";
+
+import { getLocalStorage, setLocalStorage } from "../localStorage";
 
 // create confirm function
 const confirmRaw = createConfirmation(CreateConfirmation);
@@ -67,7 +67,7 @@ async function carWriterOutToBlob (carReaderIterable) {
   return new Blob(parts, { type: 'application/car' })
 }
 
-export const createClaim = (iKnewThat) => async ({ request }) => {
+export const createClaim = (iKnewThat, helia) => async ({ request }) => {
 
   // const ipfs = await getIPFS();
   const rawFormData = await request.formData();
@@ -93,21 +93,23 @@ export const createClaim = (iKnewThat) => async ({ request }) => {
   }
   console.log(metadata);
 
-  const helia = await createHelia()
-  const heliaFs = unixfs(helia)
-  const heliaCar = car(helia)
+  const heliaFs = unixfs(helia);
+  const heliaCar = car(helia);
+
   let rootCID = await heliaFs.addDirectory()
 
   const encoder = new TextEncoder()
   const metadataBytes = encoder.encode(JSON.stringify(metadata, null, "    "))
   const fileCid = await heliaFs.addBytes(metadataBytes)
-  rootCID = await heliaFs.cp(fileCid, rootCID, "metadata.json") 
+  rootCID = await heliaFs.cp(fileCid, rootCID, "metadata.json")
 
+  let attchDirCid = await heliaFs.addDirectory();
   const files = (Array.isArray(formData.files) ? formData.files : [formData.files])
   for (const file of files) {
     const fileCid = await heliaFs.addBytes(await readFileAsUint8Array(file))
-    rootCID = await heliaFs.cp(fileCid, rootCID, file.name)
+    attchDirCid = await heliaFs.cp(fileCid, attchDirCid, file.name)
   }
+  rootCID = await heliaFs.cp(attchDirCid, rootCID, "attachments")
 
   const { writer, out } = await CarWriter.create(rootCID)
 
@@ -125,6 +127,10 @@ export const createClaim = (iKnewThat) => async ({ request }) => {
     a.click();
 
     await iKnewThat.commit(hash);
+
+    const myClaims = getLocalStorage("myClaims", []);
+    myClaims.push(hash);
+    setLocalStorage("myClaims", myClaims);
     
     return redirect("/claim/" + hash);
   }

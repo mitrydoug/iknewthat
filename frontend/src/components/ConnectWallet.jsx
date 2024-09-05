@@ -4,12 +4,10 @@ import { NetworkErrorMessage } from "./NetworkErrorMessage";
 
 import { ethers } from "ethers";
 
-import contractAddress from "../contracts/contract-address.json";
-import IKnewThatArtifact from "../contracts/IKnewThat.json";
 
 const HARDHAT_NETWORK_ID = '31337';
 
-async function connectWallet({ setIKnewThat }) {
+async function connectWallet(setConnState) {
     // This method is run when the user clicks the Connect. It connects the
     // dapp to the user's wallet, and initializes it.
 
@@ -25,19 +23,12 @@ async function connectWallet({ setIKnewThat }) {
         params: [{ chainId: chainIdHex }],
       });
     }
-
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const iKnewThat = new ethers.Contract(
-      contractAddress.IKnewThat,
-      IKnewThatArtifact.abi,
-      provider.getSigner(0),
-    );
-    setIKnewThat(iKnewThat);
+    setConnState("connected");
 }
 
 
 
-export function ConnectWallet({ setIKnewThat }) {
+export function ConnectWallet({ setConnState }) {
   return (
     <div className="container">
       <div className="row justify-content-md-center">
@@ -46,7 +37,7 @@ export function ConnectWallet({ setIKnewThat }) {
           <button
             className="btn btn-warning"
             type="button"
-            onClick={() => connectWallet({ setIKnewThat })}
+            onClick={() => connectWallet(setConnState)}
           >
             Connect Wallet
           </button>
