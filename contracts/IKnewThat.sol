@@ -14,6 +14,7 @@ contract IKnewThat {
         uint publishTime;
         uint revealTime;
         string dataLoc;
+        uint nonce;
     }
 
     uint claimCounter;
@@ -36,15 +37,16 @@ contract IKnewThat {
         claim.publishTime = block.timestamp;
     }
 
-    function reveal(bytes32 commitment, string memory dataLoc)
+    function reveal(bytes32 commitment, string memory dataLoc, uint nonce)
         external
     {
         Claim storage claim = claims[commitment];
         // check this commitment exists
         require(claim.claimant != address(0), "Caller is not claimant");
-        require(commitment == keccak256(abi.encodePacked(dataLoc)), "Hash does not match commitment");
+        require(commitment == keccak256(abi.encodePacked(dataLoc, nonce)), "Hash does not match commitment");
         claim.revealTime = block.timestamp;
         claim.dataLoc = dataLoc;
+        claim.nonce = nonce;
     }
 
     function getClaim(bytes32 commitment) external view returns (Claim memory) {

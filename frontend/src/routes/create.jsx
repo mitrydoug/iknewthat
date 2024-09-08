@@ -54,6 +54,14 @@ async function readFileAsUint8Array (file) {
   })
 }
 
+function blobToBase64(blob) {
+  return new Promise((resolve, _) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
 /**
  *
  * @param {AsyncIterable<Uint8Array>} carReaderIterable
@@ -117,13 +125,25 @@ export const createClaim = (iKnewThat, helia) => async ({ request }) => {
   await heliaCar.export(rootCID, writer)
   const carBlob = await carBlobPromise
 
-  const hash = ethers.utils.solidityKeccak256(["string"], [String(rootCID)]);
+  console.log(typeof carBlob)
+  console.log(carBlob);
+
+  const randomValueArr = new BigUint64Array(1);
+  crypto.getRandomValues(randomValueArr);
+  const randomValue = randomValueArr[0];
+
+  var saveObj = {
+    "secret": String(randomValue),
+    "carBytes": await blobToBase64(carBlob)
+  }
+
+  const hash = ethers.utils.solidityKeccak256(["string", "uint"], [String(rootCID), randomValue]);
 
   if (await confirmRaw({message: "Are you sure?\n\nCommitment: " + hash})) {
 
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(carBlob);
-    a.download = metadata.title.trim().replaceAll(" ", "_") + '.car';
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(saveObj)], {type : "application/json"}));
+    a.download = metadata.title.trim().replaceAll(" ", "_") + '.claim';
     a.click();
 
     await iKnewThat.commit(hash);

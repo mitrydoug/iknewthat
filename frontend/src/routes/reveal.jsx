@@ -54,6 +54,27 @@ async function readFileAsUint8Array (file) {
   })
 }
 
+async function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      const result = reader.result
+      if (result != null) {
+        resolve(result); 
+        return;
+      }
+      reject(new Error('arrayBuffer is null'))
+    }
+
+    reader.onerror = (error) => {
+      reject(error)
+    }
+
+    reader.readAsText(file)
+  })
+}
+
 /**
  *
  * @param {AsyncIterable<Uint8Array>} carReaderIterable
@@ -88,7 +109,22 @@ export const revealClaim = (iKnewThat) => async ({ request }) => {
   });
   console.log(formData);
 
-  const carBytes = await readFileAsUint8Array(formData.file)
+  const saveObj = JSON.parse(await readFileAsText(formData.file));
+  const randomValue = BigInt(saveObj["secret"]);
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, _) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  const carBlob = await (await fetch(saveObj["carBytes"])).blob();
+  const carBytes = new Uint8Array(await carBlob.arrayBuffer());
+
+  console.log(carBytes);
+
   const reader = await CarReader.fromBytes(carBytes);
   const CIDs = await reader.getRoots();
   
@@ -97,13 +133,12 @@ export const revealClaim = (iKnewThat) => async ({ request }) => {
 
   if (await confirmRaw({message: "Are you sure you want to reveal?"})) {
 
-    const hash = ethers.utils.solidityKeccak256(["string"], [String(dataLoc)]);
-    await iKnewThat.reveal(hash, dataLoc);
+    const hash = ethers.utils.solidityKeccak256(["string", "uint"], [String(dataLoc), randomValue]);
+    console.log(randomValue);
+    await iKnewThat.reveal(hash, dataLoc, randomValue);
     
     return redirect("/claim/" + hash);
   }
-  return redirect("/");
-
   return redirect("/");
 }
 
