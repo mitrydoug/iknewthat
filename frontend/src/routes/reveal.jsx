@@ -1,5 +1,8 @@
 import React from "react";
-import { Form, redirect, useOutletContext } from "react-router-dom";
+import { redirect, useOutletContext, useSubmit } from "react-router-dom";
+import { SelectOutlined } from '@ant-design/icons';
+import { Button, Form, Typography, Upload } from 'antd';
+
 // import { getIPFS } from "../ipfs";
 import { getIKnewThat } from "../iknewthat";
 
@@ -13,6 +16,9 @@ import { CarReader } from '@ipld/car'
 
 import { createConfirmation } from 'react-confirm';
 import CreateConfirmation from "../components/CreateConfirmation";
+
+const { Dragger } = Upload;
+const { Title } = Typography;
 
 // create confirm function
 const confirmRaw = createConfirmation(CreateConfirmation);
@@ -90,6 +96,8 @@ async function carWriterOutToBlob (carReaderIterable) {
 
 export const revealClaim = (iKnewThat) => async ({ request }) => {
 
+  console.log("Reveal Claim")
+
   // const ipfs = await getIPFS();
   const rawFormData = await request.formData();
   const formData = {};
@@ -144,14 +152,35 @@ export const revealClaim = (iKnewThat) => async ({ request }) => {
 
 
 export default function RevealClaim() {
+
+  const submit = useSubmit();
+
+  const dummyRequest = ({ onSuccess }) => {
+    setTimeout(() => {
+      onSuccess("ok");
+    }, 0);
+  };
     
   return (
     <div id="claim">
-      <h1>Reveal Claim</h1>
-      <Form method="post" encType="multipart/form-data">
-        <h3>Car File</h3>
-        <input type="file" id="files" name="file"/><br/>
-        <button id="submit-reveal-btn" type="submit">Submit</button>
+      <Title level={2}>Reveal Claim</ Title>
+      <Form
+        layout="horizontal"
+        onSubmitCapture={(event) => { console.log("Hello?"); event.preventDefault(); }}
+        onFinish={(values) => {
+          submit(values, { method: 'post' })
+        }}
+      >
+        <Form.Item name="claim-file">
+          <Upload
+            accept=".claim"
+            action={async (file) => { return null; }}
+            customRequest={dummyRequest}
+          >
+            <Button icon={<SelectOutlined />}>Choose Claim</Button>
+          </Upload>
+        </Form.Item>
+        <Button id="submit-claim-btn" type="primary" htmlType="submit">Reveal</Button>
       </Form>
     </div>
   );

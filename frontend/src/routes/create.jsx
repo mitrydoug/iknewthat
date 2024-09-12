@@ -1,5 +1,9 @@
 import React from "react";
-import { Form, redirect, useOutletContext } from "react-router-dom";
+import { redirect, useOutletContext, useSubmit } from "react-router-dom";
+import { Button, Input, Form, Typography, Upload } from 'antd';
+import { PaperClipOutlined } from '@ant-design/icons';
+
+
 // import { getIPFS } from "../ipfs";
 
 import { ethers } from "ethers";
@@ -13,6 +17,10 @@ import { createConfirmation } from 'react-confirm';
 import CreateConfirmation from "../components/CreateConfirmation";
 
 import { getLocalStorage, setLocalStorage } from "../localStorage";
+
+const { Dragger } = Upload;
+const { TextArea } = Input;
+const { Title } = Typography;
 
 // create confirm function
 const confirmRaw = createConfirmation(CreateConfirmation);
@@ -76,6 +84,8 @@ async function carWriterOutToBlob (carReaderIterable) {
 }
 
 export const createClaim = (iKnewThat, helia) => async ({ request }) => {
+
+  console.log("I'm here!")
 
   // const ipfs = await getIPFS();
   const rawFormData = await request.formData();
@@ -159,31 +169,46 @@ export const createClaim = (iKnewThat, helia) => async ({ request }) => {
 
 
 export default function CreateClaim() {
+
+  const submit = useSubmit();
+
+  const dummyRequest = ({ onSuccess }) => {
+    setTimeout(() => {
+      onSuccess("ok");
+    }, 0);
+  };
     
   return (
     <div id="claim">
-      <h1>Make Claim</h1>
-      <Form method="post" encType="multipart/form-data">
-        <h3>Add a Title</h3>
-        <input
-          id="claim-title"
-          placeholder="Title ..."
-          aria-label="claim-title"
-          type="text"
-          name="claim-title"
-        />
-        <h3>Add a Description</h3>
-        <textarea
-          id="claim-description"
-          placeholder="Description ..."
-          aria-label="claim-description"
-          type="text"
-          name="claim-description"
-        />
-        <h3>Add Files</h3>
-        <input type="file" id="files" name="files" multiple/><br/>
-        <button id="submit-claim-btn" type="submit">Submit</button>
+      <Title level={2}>Make Claim</ Title>
+      <Form
+        layout="vertical"
+        onSubmitCapture={(event) => { console.log("Hello?"); event.preventDefault(); }}
+        onFinish={(values) => {
+          submit(values, { method: 'post' })
+        }}
+      >
+        <Form.Item label="Add a Title" name="claim-title">
+          <Input type="text" placeholder="Title ..." />
+        </Form.Item>
+        
+        <Form.Item label="Add a Description" name="claim-description">
+          <TextArea placeholder="Description ..."/>
+        </ Form.Item>
+        <Form.Item label="Add Files" name="files">
+          <Dragger file multiple
+            style={{ display: 'block' }}
+            action={async (file) => { return null; }}
+            customRequest={dummyRequest}
+          >
+            <PaperClipOutlined style={{fontSize: 36, color: '#aaaaaa'}}/>
+            <p className="ant-upload-text" style={{color: '#aaaaaa'}}>Attach files to this claim</p>
+          </Dragger>
+        </Form.Item>
+        <Button id="submit-claim-btn" type="primary" htmlType="submit">Submit</Button>
       </Form>
     </div>
   );
 }
+
+/* <input type="file" id="files" name="files" multiple/><br/> */

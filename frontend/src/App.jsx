@@ -65,13 +65,15 @@ export default function App() {
     }
 
     if(!fetch && !helia) {
-        createHelia({ blockstore }).then((helia) => {
+        setHelia("helia");
+        setFetch("fetch");
+        /* createHelia({ blockstore }).then((helia) => {
             createVerifiedFetch(helia).then((fetch) => {
                 console.log(fetch);
                 setFetch(_ => fetch);
                 setHelia(helia);
             });
-        });
+        });*/
         return <Loading />;
     }
 
