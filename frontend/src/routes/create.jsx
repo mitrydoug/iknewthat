@@ -1,6 +1,7 @@
 import React from "react";
-import { redirect, useOutletContext, useSubmit } from "react-router-dom";
-import { Button, Input, Form, Typography, Upload } from 'antd';
+import { useMemo, useState } from "react";
+import { redirect, useNavigate } from "react-router-dom";
+import { Button, Input, Form, Modal, Typography, Upload } from 'antd';
 import { PaperClipOutlined } from '@ant-design/icons';
 
 
@@ -83,12 +84,16 @@ async function carWriterOutToBlob (carReaderIterable) {
   return new Blob(parts, { type: 'application/car' })
 }
 
-export const createClaim = (iKnewThat, helia) => async ({ request }) => {
+export const createClaim = (iKnewThat, helia) => async (values) => {
 
   console.log("I'm here!")
 
+  console.log(await request.text());
+
   // const ipfs = await getIPFS();
   const rawFormData = await request.formData();
+  console.log(rawFormData);
+
   const formData = {};
   Array.from(rawFormData).forEach((elem) => {
     const k = elem[0]
@@ -122,8 +127,8 @@ export const createClaim = (iKnewThat, helia) => async ({ request }) => {
   rootCID = await heliaFs.cp(fileCid, rootCID, "metadata.json")
 
   let attchDirCid = await heliaFs.addDirectory();
-  const files = (Array.isArray(formData.files) ? formData.files : [formData.files])
-  for (const file of files) {
+  for (const file of (formData.files?.fileList || [])) {
+    console.log(file);
     const fileCid = await heliaFs.addBytes(await readFileAsUint8Array(file))
     attchDirCid = await heliaFs.cp(fileCid, attchDirCid, file.name)
   }
@@ -170,22 +175,46 @@ export const createClaim = (iKnewThat, helia) => async ({ request }) => {
 
 export default function CreateClaim() {
 
-  const submit = useSubmit();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const dummyRequest = ({ onSuccess }) => {
+  const navigate = useNavigate();
+
+  const dummyRequest = useMemo((request) => {
     setTimeout(() => {
-      onSuccess("ok");
-    }, 0);
+      request.onSuccess("ok");
+    }, 3000);
+  }, []);
+
+  const submitCreate = useMemo((values) => {
+    const result = createClaim(values);
+    if (result === "success") {
+      navigate("/claim/asdflkj");
+    } else {
+      navigate("/");
+    }
+  }, []);
+
+  const handleOk = () => {
+    setIsModalOpen(false);
   };
-    
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
   return (
-    <div id="claim">
+    <>
       <Title level={2}>Make Claim</ Title>
       <Form
         layout="vertical"
-        onSubmitCapture={(event) => { console.log("Hello?"); event.preventDefault(); }}
+        onSubmitCapture={(event) => { event.preventDefault(); }}
         onFinish={(values) => {
-          submit(values, { method: 'post' })
+          console.log(values);
+          showModal();
         }}
       >
         <Form.Item label="Add a Title" name="claim-title">
@@ -198,7 +227,7 @@ export default function CreateClaim() {
         <Form.Item label="Add Files" name="files">
           <Dragger file multiple
             style={{ display: 'block' }}
-            action={async (file) => { return null; }}
+            
             customRequest={dummyRequest}
           >
             <PaperClipOutlined style={{fontSize: 36, color: '#aaaaaa'}}/>
@@ -207,8 +236,9 @@ export default function CreateClaim() {
         </Form.Item>
         <Button id="submit-claim-btn" type="primary" htmlType="submit">Submit</Button>
       </Form>
-    </div>
+      <Modal title="Are you sure?" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+
+      </Modal>
+    </>
   );
 }
-
-/* <input type="file" id="files" name="files" multiple/><br/> */

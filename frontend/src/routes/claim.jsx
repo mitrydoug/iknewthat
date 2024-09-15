@@ -2,11 +2,15 @@ import { useParams } from "react-router-dom";
 import { timeDeltaFormat } from "../utils";
 import { Loading } from "../components/Loading";
 import { useState } from "react";
+import { Card, Flex, Tag, Tooltip, Typography } from "antd";
+import { EyeOutlined, EyeInvisibleOutlined} from '@ant-design/icons';
 
 import { unixfs } from '@helia/unixfs'
 import { getLocalStorage } from "../localStorage";
 import Markdown from "react-markdown"; 
 import { poll } from "ethers/lib/utils";
+
+const { Paragraph, Title } = Typography;
 
 
 const loadData = async (cidStr, helia, fetch) => {
@@ -52,11 +56,27 @@ export default function Claim({ iKnewThat, helia, fetch }) {
   //const { commitHash, claim, metadata } = useLoaderData();
 
   const { p_claimId, p_commitHash } = useParams();
+
+
+  return (
+    <ClaimImpl
+      iKnewThat={iKnewThat}
+      helia={helia}
+      fetch={fetch}
+      p_claimId={p_claimId}
+      p_commitHash={p_commitHash}
+      key={[p_claimId, p_commitHash]} />
+  );
+}
+
+const ClaimImpl = ({ iKnewThat, helia, fetch, p_claimId, p_commitHash }) => {
+
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
   const [claim, setClaim] = useState(null);
   const [metadata, setMetadata] = useState(null);
   const [attachments, setAttachments] = useState(null);
   const myClaims = getLocalStorage("myClaims", []);
+
   console.log(myClaims);
   console.log(claim);
 
@@ -66,7 +86,7 @@ export default function Claim({ iKnewThat, helia, fetch }) {
       iKnewThat.getClaim(commitHash).then((claim) => {
         setClaim(claim);
       });
-    } else { // commitId
+    } else {
       console.log(p_claimId);
       iKnewThat.getClaimCommitmentFromId(p_claimId).then((commitHash) => {
         setCommitHash(commitHash);
@@ -102,8 +122,8 @@ export default function Claim({ iKnewThat, helia, fetch }) {
     );
     revealed = revealTime !== null;
     stateTag = (revealed ? 
-      <span className="state-revealed">Revealed</span> :
-      <span className="state-concealed">Concealed</span>
+      <Tag color="green"><EyeOutlined /> Revealed</Tag> :
+      <Tag color="grey"><EyeInvisibleOutlined /> Concealed</Tag>
     );
   } else if (myClaims.includes(commitHash)) {
     claimId = "?";
@@ -130,7 +150,7 @@ export default function Claim({ iKnewThat, helia, fetch }) {
   const commitShort = commitHash.substring(0, 9);
 
   const title = metadata ? metadata.title : "Claim";
-  const description = metadata ? metadata.description : "";
+  const description = metadata ? metadata.description : "## Summary\nHello there";
 
   const attachment_links = []
   for (const [key, value] of Object.entries(attachments || {})) {
@@ -143,22 +163,24 @@ export default function Claim({ iKnewThat, helia, fetch }) {
   console.log(attachment_links);
     
   return (
-    <div id="claim">
-        <h1 id="h1-claim-details">{title} <span className="claim-id">#{claimId}</span></h1>
-        {stateTag} <span className="mytooltip">{claimantShort}<span className="mytooltiptext">{claimant}</span></span>&nbsp;
-        made claim <span className="mytooltip">{commitShort}<span className="mytooltiptext">{commitHash}</span></span>&nbsp;
-        &nbsp;{ commitTime && <span className="mytooltip">{deltaText}<span className="mytooltiptext">{localeStr}</span></span>}
-        { description &&
-          <div id="description-div">
-            <Markdown>{description}</Markdown>
-          </div>
-        }
-        { attachment_links.length > 0 &&
-          <div>
-            <h3>Attachments</h3>
-            <div id="attachments-div">{attachment_links}</div>
-          </div>
-        }
-    </div>
+    <Flex vertical style={{ width: '100%'}}>
+      <Title level={2}>{title} # {claimId}</Title>
+      <Paragraph>
+        {stateTag} <Tooltip title={claimant}>{claimantShort}</Tooltip>&nbsp;
+        made claim <Tooltip title={commitHash}>{commitShort}</Tooltip>&nbsp;
+        &nbsp;{ commitTime && <Tooltip title={localeStr}>{deltaText}</Tooltip>}
+      </Paragraph>
+      { description &&
+        <Card size="small">
+          <Markdown>{description}</Markdown>
+        </Card>
+      }
+      { attachment_links.length > 0 &&
+        <div>
+          <h3>Attachments</h3>
+          <div id="attachments-div">{attachment_links}</div>
+        </div>
+      }
+    </Flex>
   );
 }
