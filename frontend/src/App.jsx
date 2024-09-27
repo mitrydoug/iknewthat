@@ -2,16 +2,23 @@ import { useState, useMemo } from "react";
 import { NoWalletDetected } from "./components/NoWalletDetected";
 import { ConnectWallet } from "./components/ConnectWallet";
 
+import {
+    QueryClient,
+    QueryClientProvider,
+  } from '@tanstack/react-query'
+
 import { ethers } from "ethers";
 import contractAddress from "./contracts/contract-address.json";
 import IKnewThatArtifact from "./contracts/IKnewThat.json";
+import { AppContext } from "./AppContext" 
 
 import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
 
-import { createHelia } from 'helia'
+import { createHeliaHTTP } from '@helia/http'
+import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 
 import ErrorPage from "./error-page";
 import Root, { lookup as indexLookup } from "./routes/root";
@@ -24,15 +31,23 @@ import { Loading } from "./components/Loading";
 
 export default function App() {
 
-    if (window.ethereum === undefined) {
-        return <NoWalletDetected />;
-    }
-
-    const provider = useMemo(() => { return new ethers.providers.Web3Provider(window.ethereum); });
-
     const [connState, setConnState] = useState("unknown");
+    const [fetch, setFetch] = useState(null);
+    const [helia, setHelia] = useState(null);
+    
+    const provider = useMemo(() => {
+        if (window.ethereum) {
+            return new ethers.providers.Web3Provider(window.ethereum);
+        } else {
+            return null;
+        }
+    }, [window.ethereum]);
 
     const iKnewThat = useMemo(() => {
+
+        if (provider === null) {
+            return null;
+        }
         
         const iKnewThat = new ethers.Contract(
             contractAddress.IKnewThat,
@@ -42,12 +57,11 @@ export default function App() {
         return iKnewThat;
     }, [provider]);
 
-    const [helia, setHelia] = useState(null);
-    const [fetch, setFetch] = useState(null);
-
     const blockstore = useMemo(() => {
         return new MemoryBlockstore();
     });
+
+    const queryClient = new QueryClient()
 
     if (connState == "unknown") {
         
@@ -64,20 +78,25 @@ export default function App() {
         return <ConnectWallet setConnState={setConnState}/>;
     }
 
-    if(!fetch && !helia) {
-        setHelia("helia");
-        setFetch("fetch");
-        createHelia({ blockstore }).then((helia) => {
-            createVerifiedFetch(helia).then((fetch) => {
-                console.log(fetch);
-                setFetch(_ => fetch);
-                setHelia(helia);
-            });
-        });
-        return <Loading />;
+    if (window.ethereum === undefined) {
+        return <NoWalletDetected />;
     }
 
-    console.log(fetch);
+    if(!helia) {
+        createHeliaHTTP({
+          routers: [
+            delegatedHTTPRouting('https://delegated-ipfs.dev'),
+            httpGatewayRouting({
+              gateways: ['https://w3s.link', 'https://trustless-gateway.link']
+            }),
+          ]
+        }).then((helia) => {
+          setHelia(helia);
+        });
+    }
+
+    console.log(helia);
+
     const router = createBrowserRouter([
         {
             path: "/",
@@ -87,25 +106,30 @@ export default function App() {
             children: [
                 {
                     path: "claim/:p_commitHash",
-                    element: <Claim iKnewThat={iKnewThat} helia={helia} fetch={fetch}/>,
+                    element: <Claim/>,
                 },
                 {
                     path: "claim/id/:p_claimId",
-                    element: <Claim iKnewThat={iKnewThat} helia={helia} fetch={fetch}/>,
+                    element: <Claim/>,
                 },
                 {
                     path: "claim/create",
-                    element: <CreateClaim />,
-                    action: createClaim(iKnewThat, helia),
+                    element: <CreateClaim/>,
                 },
                 {
                     path: "claim/reveal",
                     element: <RevealClaim />,
-                    action: revealClaim(iKnewThat),
                 },
             ],
         },
     ]);
 
-    return <RouterProvider router={router} />;
+    return (
+        <QueryClientProvider client={queryClient}>
+            <AppContext.Provider value={{ iKnewThat, helia }}>
+                <RouterProvider router={router} />
+            </AppContext.Provider>
+        </QueryClientProvider>
+        
+    );
 }

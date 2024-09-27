@@ -1,16 +1,20 @@
 import { useParams } from "react-router-dom";
 import { timeDeltaFormat } from "../utils";
 import { Loading } from "../components/Loading";
-import { useState } from "react";
-import { Card, Flex, Tag, Tooltip, Typography } from "antd";
-import { EyeOutlined, EyeInvisibleOutlined} from '@ant-design/icons';
+import { AppContext } from "../AppContext"
+import { useContext, useState } from "react";
+import { Avatar, Card, Divider, Flex, Tag, Tooltip, Typography } from "antd";
+import { EyeOutlined, EyeInvisibleOutlined, FileImageOutlined } from '@ant-design/icons';
+import { useQuery } from "@tanstack/react-query";
 
 import { unixfs } from '@helia/unixfs'
 import { getLocalStorage } from "../localStorage";
 import Markdown from "react-markdown"; 
+import remarkGfm from "remark-gfm";
 import { poll } from "ethers/lib/utils";
 
 const { Paragraph, Title } = Typography;
+const { Meta } = Card;
 
 
 const loadData = async (cidStr, helia, fetch) => {
@@ -51,10 +55,11 @@ const loadData = async (cidStr, helia, fetch) => {
 };
 
 
-export default function Claim({ iKnewThat, helia, fetch }) {
+export default function Claim() {
 
   //const { commitHash, claim, metadata } = useLoaderData();
 
+  const { iKnewThat, helia } = useContext(AppContext);
   const { p_claimId, p_commitHash } = useParams();
 
 
@@ -62,23 +67,54 @@ export default function Claim({ iKnewThat, helia, fetch }) {
     <ClaimImpl
       iKnewThat={iKnewThat}
       helia={helia}
-      fetch={fetch}
       p_claimId={p_claimId}
       p_commitHash={p_commitHash}
       key={[p_claimId, p_commitHash]} />
   );
 }
 
-const ClaimImpl = ({ iKnewThat, helia, fetch, p_claimId, p_commitHash }) => {
+const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
   const [claim, setClaim] = useState(null);
-  const [metadata, setMetadata] = useState(null);
   const [attachments, setAttachments] = useState(null);
   const myClaims = getLocalStorage("myClaims", []);
 
   console.log(myClaims);
   console.log(claim);
+
+  const {
+    isPending,
+    isError,
+    data: metadata,
+    error,
+  } = useQuery({
+    queryKey: [claim?.dataLoc],
+    queryFn: async () => {
+      const fs = unixfs(helia)
+      //const res = await fs.ls(CID.parse(claim.dataLoc));
+
+      const attachments = []
+      for await (const entry of fs.ls(claim.dataLoc)) {
+        attachments.push(entry.name);
+      }
+
+      return attachments;
+
+      /*const url = `ipfs://${claim.dataLoc}/metadata.json`; // /metadata.json`
+      console.log(url);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const res = await response.json();
+      console.log(res);
+      return {...res, what: "yes!"};*/
+    },
+    enabled: Boolean(claim && claim.revealTime.toNumber() > 0),
+  });
+
+  console.log(metadata, isPending, isError, error);
 
   if (!claim) {
     if (commitHash) {
@@ -103,14 +139,6 @@ const ClaimImpl = ({ iKnewThat, helia, fetch, p_claimId, p_commitHash }) => {
   var stateTag = null;
 
   if(claim.publishTime.toNumber() > 0) {
-
-    if (!metadata && claim.revealTime.toNumber() > 0) {
-      //console.log(claim.dataLoc);
-      loadData(claim.dataLoc, helia, fetch).then(([metadata, attachments]) => {
-        setMetadata(metadata);
-        setAttachments(attachments);
-      });
-    }
 
     claimId = String(claim.id);
     claimant = String(claim.claimant)
@@ -150,21 +178,34 @@ const ClaimImpl = ({ iKnewThat, helia, fetch, p_claimId, p_commitHash }) => {
   const commitShort = commitHash.substring(0, 9);
 
   const title = metadata ? metadata.title : "Claim";
-  const description = metadata ? metadata.description : "## Summary\nHello there";
+  const description = metadata?.description;
 
   const attachment_links = []
-  for (const [key, value] of Object.entries(attachments || {})) {
-      const fileName = key.trim().replaceAll(" ", "_");
-      const href = URL.createObjectURL(new Blob(value));
-      const elem = <a href={href} download={fileName}><div>{fileName}</div></a>;
+  for (const fileName of (metadata?.attachments || [])) {
+      const href = `https://${claim.dataLoc}.ipfs.w3s.link/${fileName}` 
+      const elem = (
+        <a href={href} target="_blank" rel="noopener noreferrer" key={fileName}>
+          <Card
+            className="claim-attachment"
+            style={{ maxWidth: "300px" }}
+            size="small"
+          >
+            <Meta
+              avatar={<FileImageOutlined />}
+              title={<Tooltip title={fileName} mouseEnterDelay={1}>{fileName}</Tooltip>}
+              description="50KB"
+            />
+          </Card>
+        </a>
+      );
       attachment_links.push(elem);
   }
 
   console.log(attachment_links);
     
   return (
-    <Flex vertical style={{ width: '100%'}}>
-      <Title level={2}>{title} # {claimId}</Title>
+    <>
+      <Title level={2}>{title} #{claimId}</Title>
       <Paragraph>
         {stateTag} <Tooltip title={claimant}>{claimantShort}</Tooltip>&nbsp;
         made claim <Tooltip title={commitHash}>{commitShort}</Tooltip>&nbsp;
@@ -172,15 +213,17 @@ const ClaimImpl = ({ iKnewThat, helia, fetch, p_claimId, p_commitHash }) => {
       </Paragraph>
       { description &&
         <Card size="small">
-          <Markdown>{description}</Markdown>
+          <Markdown className="markdown" remarkPlugins={[remarkGfm]}>{description}</Markdown>
         </Card>
       }
       { attachment_links.length > 0 &&
-        <div>
-          <h3>Attachments</h3>
-          <div id="attachments-div">{attachment_links}</div>
-        </div>
+        <>
+          <Title level={4}>Attachments</Title>
+          <Flex wrap gap="small">
+            {attachment_links}
+          </Flex>
+        </>
       }
-    </Flex>
+    </>
   );
 }

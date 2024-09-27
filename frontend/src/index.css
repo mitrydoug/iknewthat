@@ -207,7 +207,7 @@ body {
 }
 
 #logo {
-    max-width: 15rem;
+    max-width: 14.5rem;
 }
 
 .ant-upload-wrapper {
@@ -216,4 +216,24 @@ body {
 
 .ant-form-item-label > label {
     font-size: 40px;
+}
+
+.markdown > :first-child {
+    margin-top: 0 !important;
+}
+
+.markdown > :last-child {
+    margin-bottom: 0 !important;
+}
+
+.ant-card {
+    box-shadow: 1px 1px 2px #d1d1d1; 
+}
+
+.ant-card.claim-attachment:hover {
+    box-shadow: 2px 2px 3px #d1d1d1;  
+}
+
+.claim-attachment .ant-card-meta-title {
+    margin-bottom: 0px !important;
 }

@@ -1,7 +1,6 @@
 import React from "react";
 import { Link, Outlet, redirect, useSubmit } from "react-router-dom";
 import { Button, Col, Flex, Form, Layout, Image, Input, Row } from "antd";
-import { ethers } from "ethers";
 
 const { Search } = Input;
 const { Header, Footer, Sider, Content } = Layout;
@@ -40,7 +39,7 @@ const contentStyle = {
 const footerStyle = {
   textAlign: 'center',
   color: '#999999',
-  backgroundColor: '#f0f3fa',
+  backgroundColor: '#f0f0f0',
 };
 
 
@@ -97,33 +96,3 @@ export default function Root() {
       </Layout>
   );
 }
-
-/**
- * <div id="top-bar">
-        <div id="search-bar">
-          <div id="logo-div"><a href="/"><img id="logo" src="/logo.png"/></a></div>
-          <div id="search-form-div">
-            <Form method="post" id="search-form">
-              <input
-                id="search-text"
-                placeholder="Claim id or commitment ..."
-                aria-label="commitOrId"
-                type="text"
-                name="commitOrId"
-                autoComplete="on"
-              />
-              <button type="submit">Search</button>
-            </Form>
-            <Link to="/claim/create">
-              <button>Make Claim</button>
-            </Link>
-            <Link to="/claim/reveal">
-              <button>Reveal Claim</button>
-            </Link>
-          </div>
-        </div>
-      </div>
-      <div id="content" className="content">
-        <Outlet />
-      </div>
- */

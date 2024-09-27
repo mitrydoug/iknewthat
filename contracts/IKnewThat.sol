@@ -42,7 +42,7 @@ contract IKnewThat {
     {
         Claim storage claim = claims[commitment];
         // check this commitment exists
-        require(claim.claimant != address(0), "Caller is not claimant");
+        require(claim.claimant != address(0), "Claim does not exist");
         require(commitment == keccak256(abi.encodePacked(dataLoc, nonce)), "Hash does not match commitment");
         claim.revealTime = block.timestamp;
         claim.dataLoc = dataLoc;

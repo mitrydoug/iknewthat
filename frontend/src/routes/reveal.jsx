@@ -1,32 +1,19 @@
 import React from "react";
-import { redirect, useOutletContext, useSubmit } from "react-router-dom";
+import { useContext } from "react";
+import { useNavigate, useOutletContext, useSubmit } from "react-router-dom";
 import { SelectOutlined } from '@ant-design/icons';
-import { Button, Form, Typography, Upload } from 'antd';
-
-// import { getIPFS } from "../ipfs";
-import { getIKnewThat } from "../iknewthat";
+import { Button, Form, Modal, Typography, Upload } from 'antd';
+import { AppContext } from "../AppContext"
+import { TarReader } from "@gera2ld/tarjs"
 
 import { ethers } from "ethers";
 
-// helia
-import { createHelia } from 'helia'
-import { car } from '@helia/car'
-import { unixfs } from '@helia/unixfs'
+// ipfs
 import { CarReader } from '@ipld/car'
-
-import { createConfirmation } from 'react-confirm';
-import CreateConfirmation from "../components/CreateConfirmation";
 
 const { Dragger } = Upload;
 const { Title } = Typography;
-
-// create confirm function
-const confirmRaw = createConfirmation(CreateConfirmation);
-
-// This is optional. But wrapping function makes it easy to use.
-function confirm(confirmation, options = {}) {
-  return confirmRaw({ confirmation, options });
-}
+const { confirm } = Modal;
 
 /**
  *
@@ -94,41 +81,21 @@ async function carWriterOutToBlob (carReaderIterable) {
   return new Blob(parts, { type: 'application/car' })
 }
 
-export const revealClaim = (iKnewThat) => async ({ request }) => {
+export const revealClaim = (iKnewThat) => async (values) => {
 
   console.log("Reveal Claim")
+  console.log(values);
 
-  // const ipfs = await getIPFS();
-  const rawFormData = await request.formData();
-  const formData = {};
-  Array.from(rawFormData).forEach((elem) => {
-    const k = elem[0]
-    const v = elem[1]
-    if(formData.hasOwnProperty(k)) {
-      formData[k].push(v)
-    } else {
-      formData[k] = [v]
-    }
-  });
-  Object.keys(formData).forEach(function(key, index) {
-    if(formData[key].length === 1) {
-      formData[key] = formData[key][0]
-    }
-  });
-  console.log(formData);
+  const tarReader = await TarReader.load(values['claim-file'].file.originFileObj);
 
-  const saveObj = JSON.parse(await readFileAsText(formData.file));
-  const randomValue = BigInt(saveObj["secret"]);
+  console.log(tarReader.fileInfos);
 
-  function blobToBase64(blob) {
-    return new Promise((resolve, _) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
-  }
+  const carFileInfo = tarReader.fileInfos.filter((info) => info.name.endsWith(".car"))[0]
+  const secretFileInfo = tarReader.fileInfos.filter((info) => info.name === "secret.txt")[0] 
 
-  const carBlob = await (await fetch(saveObj["carBytes"])).blob();
+  const carBlob = tarReader.getFileBlob(carFileInfo.name);
+  const randomValue = BigInt(tarReader.getTextFile(secretFileInfo.name))
+
   const carBytes = new Uint8Array(await carBlob.arrayBuffer());
 
   console.log(carBytes);
@@ -139,37 +106,47 @@ export const revealClaim = (iKnewThat) => async ({ request }) => {
   const dataLoc = String(CIDs[0])
   console.log(dataLoc);
 
-  if (await confirmRaw({message: "Are you sure you want to reveal?"})) {
+  const hash = ethers.utils.solidityKeccak256(["string", "uint"], [String(dataLoc), randomValue]);
+  console.log(randomValue);
+  await iKnewThat.reveal(hash, dataLoc, randomValue);
 
-    const hash = ethers.utils.solidityKeccak256(["string", "uint"], [String(dataLoc), randomValue]);
-    console.log(randomValue);
-    await iKnewThat.reveal(hash, dataLoc, randomValue);
+  return hash;
     
-    return redirect("/claim/" + hash);
+  /*return redirect("/claim/" + hash);
   }
-  return redirect("/");
+  return redirect("/");*/
 }
 
 
 export default function RevealClaim() {
 
-  const submit = useSubmit();
+  const { iKnewThat, helia } = useContext(AppContext);
+  const navigate = useNavigate();
 
   const dummyRequest = ({ onSuccess }) => {
     setTimeout(() => {
       onSuccess("ok");
     }, 0);
   };
+
+  const submitForm = async (values) => {
+    confirm({
+      title: 'Are you sure?',
+      content: 'Are you sure you want to reveal this claim?',
+      onOk: (async () => {
+        const hash = await revealClaim(iKnewThat)(values);
+        navigate("/claim/" + hash);
+      }),
+    });
+  }
     
   return (
-    <div id="claim">
+    <>
       <Title level={2}>Reveal Claim</ Title>
       <Form
         layout="horizontal"
         onSubmitCapture={(event) => { console.log("Hello?"); event.preventDefault(); }}
-        onFinish={(values) => {
-          submit(values, { method: 'post' })
-        }}
+        onFinish={submitForm}
       >
         <Form.Item name="claim-file">
           <Upload
@@ -182,6 +159,6 @@ export default function RevealClaim() {
         </Form.Item>
         <Button id="submit-claim-btn" type="primary" htmlType="submit">Reveal</Button>
       </Form>
-    </div>
+    </>
   );
 }
