@@ -22,21 +22,16 @@ async function main() {
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  const Token = await ethers.getContractFactory("Token");
-  const token = await Token.deploy();
-  await token.deployed();
-  console.log("Token address:", token.address);
-
   const IKnewThat = await ethers.getContractFactory("IKnewThat");
   const iKnewThat = await IKnewThat.deploy();
   await iKnewThat.deployed();
   console.log("IKnewThat address:", iKnewThat.address);
   
   // We also save the contract's artifacts and address in the frontend directory
-  saveFrontendFiles(token, iKnewThat);
+  saveFrontendFiles(iKnewThat);
 }
 
-function saveFrontendFiles(token, iKnewThat) {
+function saveFrontendFiles(iKnewThat) {
   const fs = require("fs");
   const contractsDir = path.join(__dirname, "..", "frontend", "src", "contracts");
 
@@ -46,14 +41,7 @@ function saveFrontendFiles(token, iKnewThat) {
 
   fs.writeFileSync(
     path.join(contractsDir, "contract-address.json"),
-    JSON.stringify({ Token: token.address, IKnewThat: iKnewThat.address }, undefined, 2)
-  );
-
-  const TokenArtifact = artifacts.readArtifactSync("Token");
-
-  fs.writeFileSync(
-    path.join(contractsDir, "Token.json"),
-    JSON.stringify(TokenArtifact, null, 2)
+    JSON.stringify({ IKnewThat: iKnewThat.address }, undefined, 2)
   );
 
   const IKnewThatArtifact = artifacts.readArtifactSync("IKnewThat");
