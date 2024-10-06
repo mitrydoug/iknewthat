@@ -30,7 +30,7 @@
     "blockstore-core": "^4.4.1",
     "react-markdown": "^9.0.1",
     "remark-gfm": "^4.0.0",
-    "@web3-storage/w3up-client": "^16.0.0",
+    "@web3-storage/w3up-client": "^16.2.0",
     "@gera2ld/tarjs": "^0.3.1"
   },
   "devDependencies": {

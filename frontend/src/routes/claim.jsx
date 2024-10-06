@@ -4,14 +4,15 @@ import { Loading } from "../components/Loading";
 import { AppContext } from "../AppContext"
 import { useContext, useState } from "react";
 import { Avatar, Card, Divider, Flex, Tag, Tooltip, Typography } from "antd";
-import { EyeOutlined, EyeInvisibleOutlined, FileImageOutlined } from '@ant-design/icons';
+import { EyeOutlined, EyeInvisibleOutlined, FileImageOutlined, SyncOutlined } from '@ant-design/icons';
 import { useQuery } from "@tanstack/react-query";
+import { useLocalStorage } from "../localStorage";
 
 import { unixfs } from '@helia/unixfs'
-import { getLocalStorage } from "../localStorage";
 import Markdown from "react-markdown"; 
 import remarkGfm from "remark-gfm";
 import { poll } from "ethers/lib/utils";
+import { CID } from 'multiformats/cid'
 
 const { Paragraph, Title } = Typography;
 const { Meta } = Card;
@@ -77,8 +78,8 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
   const [claim, setClaim] = useState(null);
-  const [attachments, setAttachments] = useState(null);
-  const myClaims = getLocalStorage("myClaims", []);
+  const [myClaims, _setMyClaims] = useLocalStorage("myClaims", {});
+  console.log(myClaims);
 
   console.log(myClaims);
   console.log(claim);
@@ -92,24 +93,26 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
     queryKey: [claim?.dataLoc],
     queryFn: async () => {
       const fs = unixfs(helia)
-      //const res = await fs.ls(CID.parse(claim.dataLoc));
+      // const res = await fs.ls(CID.parse(claim.dataLoc));
 
-      const attachments = []
-      for await (const entry of fs.ls(claim.dataLoc)) {
-        attachments.push(entry.name);
+      var mdCid = null;
+      for await (const entry of fs.ls(CID.parse(claim.dataLoc))) {
+        console.info(entry);
+        if(entry.name === "metadata.json") {
+          mdCid = entry.cid;
+        }
       }
 
-      return attachments;
-
-      /*const url = `ipfs://${claim.dataLoc}/metadata.json`; // /metadata.json`
-      console.log(url);
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+      const decoder = new TextDecoder()
+      var metadata = "";
+      for await (const buf of fs.cat(mdCid)) {
+        metadata += decoder.decode(buf);
       }
-      const res = await response.json();
-      console.log(res);
-      return {...res, what: "yes!"};*/
+      console.log(metadata);
+      metadata = JSON.parse(metadata);
+      console.log(metadata);
+
+      return metadata;
     },
     enabled: Boolean(claim && claim.revealTime.toNumber() > 0),
   });
@@ -136,7 +139,11 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
   var commitTime = null;
   var revealTime = null;
   var revealed = null;
+  var pending = null;
   var stateTag = null;
+
+  const myClaim = myClaims[commitHash];
+  console.log(myClaim);
 
   if(claim.publishTime.toNumber() > 0) {
 
@@ -149,15 +156,29 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
         null
     );
     revealed = revealTime !== null;
+    if (!revealed && myClaim?.status === "revealed") {
+      revealed = true;
+      pending = true;
+    }
     stateTag = (revealed ? 
-      <Tag color="green"><EyeOutlined /> Revealed</Tag> :
-      <Tag color="grey"><EyeInvisibleOutlined /> Concealed</Tag>
+      (pending ? (
+          <Tooltip title="Awaiting confirmation on blockchain">
+            <Tag color="green"><SyncOutlined spin /> Revealed</Tag>
+          </Tooltip>
+        ) : <Tag color="green"><EyeOutlined spin={pending} /> Revealed</Tag> 
+      ) :
+      <Tag color="grey"><EyeInvisibleOutlined/> Concealed</Tag>
     );
-  } else if (myClaims.includes(commitHash)) {
+  } else if (commitHash in myClaims) {
     claimId = "?";
     claimant = "you";
     revealed = false;
-    stateTag = <span className="state-pending">Pending</span>;
+    pending = true;
+    stateTag = (
+      <Tooltip title="Awaiting confirmation on blockchain">
+        <Tag color="grey"><SyncOutlined spin /> Concealed</Tag>
+      </Tooltip>
+    );
     setTimeout(() => {
       iKnewThat.getClaim(commitHash).then((claim) => {
         setClaim(claim);

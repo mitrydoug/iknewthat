@@ -5,7 +5,7 @@ import { Button, Input, Form, Modal, Typography, Upload } from 'antd';
 import { PaperClipOutlined } from '@ant-design/icons';
 import { AppContext } from "../AppContext";
 import { TarWriter } from '@gera2ld/tarjs';
-
+import { useLocalStorage } from "../localStorage";
 
 // import { getIPFS } from "../ipfs";
 
@@ -15,8 +15,6 @@ import { ethers } from "ethers";
 import { unixfs } from '@helia/unixfs'
 import { CarWriter } from '@ipld/car'
 import { car } from '@helia/car'
-
-import { getLocalStorage, setLocalStorage } from "../localStorage";
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -76,7 +74,7 @@ async function carWriterOutToBlob (carReaderIterable) {
   return new Blob(parts, { type: 'application/car' })
 }
 
-export const createClaim = (iKnewThat, helia) => async (values) => {
+export const createClaim = (iKnewThat, helia, myClaims, setMyClaims) => async (values) => {
 
   console.log("I'm here!")
   console.log(values);
@@ -87,12 +85,6 @@ export const createClaim = (iKnewThat, helia) => async (values) => {
     attachments: [],
   }
   console.log(metadata);
-
-  
-
-
-
-
 
   const files = (values.files?.fileList || []).map((fileObj) => fileObj.originFileObj)
 
@@ -148,21 +140,22 @@ export const createClaim = (iKnewThat, helia) => async (values) => {
 
   console.log("hereeee");
 
-  return hash;
+  console.log(myClaims);
+  const newMyClaims = {...myClaims};
+  newMyClaims[hash] = {
+    metadata,
+    state: "created",
+  };
+  setMyClaims(newMyClaims);
 
-  /*const myClaims = getLocalStorage("myClaims", []);
-  myClaims.push(hash);
-  setLocalStorage("myClaims", myClaims);
-  
-  return redirect("/claim/" + hash);
-  }
-  return redirect("/");*/
+  return hash;
 }
 
 
 export default function CreateClaim() {
 
   const { iKnewThat, helia } = useContext(AppContext);
+  const [myClaims, setMyClaims] = useLocalStorage("myClaims", {});
 
   const navigate = useNavigate();
 
@@ -177,7 +170,7 @@ export default function CreateClaim() {
       title: 'Create claim?',
       content: 'Are you sure you want to create this claim?',
       onOk: (async () => {
-        const hash = await createClaim(iKnewThat, helia)(values);
+        const hash = await createClaim(iKnewThat, helia, myClaims, setMyClaims)(values);
         navigate("/claim/" + hash);
       }),
     });
