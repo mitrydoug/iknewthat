@@ -126,7 +126,7 @@ export const createClaim = (iKnewThat, helia, myClaims, setMyClaims) => async (v
   tarWriter.addFile(title_path + ".car", carBlob);
   tarWriter.addFile("secret.txt", String(randomValue));
 
-  const hash = ethers.utils.solidityKeccak256(["string", "uint"], [String(rootCID), randomValue]);
+  const hash = ethers.solidityPackedKeccak256(["string", "uint"], [String(rootCID), randomValue]);
 
   const a = document.createElement('a');
   a.href = URL.createObjectURL(await tarWriter.write());

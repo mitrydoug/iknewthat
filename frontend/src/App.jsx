@@ -34,28 +34,29 @@ export default function App() {
     const [connState, setConnState] = useState("unknown");
     const [fetch, setFetch] = useState(null);
     const [helia, setHelia] = useState(null);
+    const [iKnewThat, setIKnewThat] = useState(null);
     
     const provider = useMemo(() => {
         if (window.ethereum) {
-            return new ethers.providers.Web3Provider(window.ethereum);
+            return new ethers.BrowserProvider(window.ethereum);
         } else {
             return null;
         }
     }, [window.ethereum]);
 
-    const iKnewThat = useMemo(() => {
+    if (iKnewThat === null && provider !== null) {
+        provider.getSigner().then((signer) => {
+            setIKnewThat(
+                new ethers.Contract(
+                    contractAddress.IKnewThat,
+                    IKnewThatArtifact.abi,
+                    signer,
+                )
+            );
+        });
+    }
 
-        if (provider === null) {
-            return null;
-        }
-        
-        const iKnewThat = new ethers.Contract(
-            contractAddress.IKnewThat,
-            IKnewThatArtifact.abi,
-            provider.getSigner(0),
-        );
-        return iKnewThat;
-    }, [provider]);
+    console.log(iKnewThat);
 
     const blockstore = useMemo(() => {
         return new MemoryBlockstore();
@@ -96,6 +97,10 @@ export default function App() {
     }
 
     console.log(helia);
+
+    if (iKnewThat === null) {
+        return <Loading />
+    }
 
     const router = createBrowserRouter([
         {

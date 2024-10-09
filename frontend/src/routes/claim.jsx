@@ -11,7 +11,6 @@ import { useLocalStorage } from "../localStorage";
 import { unixfs } from '@helia/unixfs'
 import Markdown from "react-markdown"; 
 import remarkGfm from "remark-gfm";
-import { poll } from "ethers/lib/utils";
 import { CID } from 'multiformats/cid'
 
 const { Paragraph, Title } = Typography;
@@ -83,6 +82,7 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
   console.log(myClaims);
   console.log(claim);
+  console.log(claim && claim.revealTime);
 
   const {
     isPending,
@@ -114,7 +114,7 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
       return metadata;
     },
-    enabled: Boolean(claim && claim.revealTime.toNumber() > 0),
+    enabled: Boolean(claim && claim.revealTime > 0n),
   });
 
   console.log(metadata, isPending, isError, error);
@@ -145,14 +145,14 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
   const myClaim = myClaims[commitHash];
   console.log(myClaim);
 
-  if(claim.publishTime.toNumber() > 0) {
+  if(claim.publishTime > 0n) {
 
     claimId = String(claim.id);
     claimant = String(claim.claimant)
-    commitTime = new Date(claim.publishTime.toNumber()*1000);
+    commitTime = new Date(Number(claim.publishTime) * 1000);
     revealTime = (
-      claim.revealTime.toNumber() > 0 ?
-        new Date(claim.publishTime.toNumber()*1000) :
+      claim.revealTime > 0n ?
+        new Date(Number(claim.revealTime) * 1000) :
         null
     );
     revealed = revealTime !== null;

@@ -117,7 +117,7 @@ export const revealClaim = (iKnewThat, W3SClient, account, myClaims, setMyClaims
   const dataLoc = String(CIDs[0])
   console.log(dataLoc);
 
-  const hash = ethers.utils.solidityKeccak256(["string", "uint"], [String(dataLoc), randomValue]);
+  const hash = ethers.solidityPackedKeccak256(["string", "uint"], [String(dataLoc), randomValue]);
   console.log(randomValue);
   await iKnewThat.reveal(hash, dataLoc, randomValue);
 
