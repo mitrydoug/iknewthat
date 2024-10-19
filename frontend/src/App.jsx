@@ -104,7 +104,7 @@ export default function App() {
 
     const router = createBrowserRouter([
         {
-            path: "/",
+            path: "/iknewthat/",
             element: <Root />,
             errorElement: <ErrorPage />,
             action: indexLookup,
