@@ -60,16 +60,14 @@ describe("IKnewThat contract", function () {
         const { iKnewThat, owner } = await loadFixture(deployFixture);
 
         const dataLoc = "/path/to/data";
-        const nonce = 42;
 
-        const hash = ethers.utils.solidityKeccak256(["string", "uint"], [dataLoc, nonce]);
+        const hash = ethers.utils.solidityKeccak256(["string"], [dataLoc]);
         await iKnewThat.commit(hash);
-        await iKnewThat.reveal(hash, dataLoc, nonce);
+        await iKnewThat.reveal(hash, dataLoc);
 
         let claim = await iKnewThat.getClaim(hash);
         expect(claim.claimant).to.equal(owner.address);
         expect(claim.dataLoc).to.equal(dataLoc);
-        expect(claim.nonce).to.equal(nonce);
     });
 
     it("Should disallow reveal invalid hash", async function() {

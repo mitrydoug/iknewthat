@@ -1,4 +1,4 @@
-body {
+/* body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
     "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
@@ -25,10 +25,6 @@ button {
   margin: 10px;
 }
 
-#search-text {
-    width: 42rem;
-}
-
 #top-bar {
     box-shadow: 1px 1px 10px hsla(0, 0%, 0%, 0.2)
 }
@@ -39,21 +35,30 @@ button {
     margin-right: auto;
 }
 
+#logo-div {
+    margin-right: 30px;
+    margin-bottom: 10px;
+    vertical-align: top;
+}
+
 #search-form {
-    display: inline;
     margin-right: 20px;
 }
 
+#search-form-div {
+    padding-top: 12px;
+}
+
 #search-bar {
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     max-width: fit-content;
     margin-left: auto;
     margin-right: auto;
 }
 
-#claim {
-    margin-top: 50px;
+#search-bar * {
+    display: inline-block;
 }
 
 #h1-claim-details {
@@ -142,9 +147,9 @@ table {
     opacity: 1;
 }
 
-.state-revealed, .state-concealed {
-    margin: 10px 10px 10px 0px;
-    padding: 8px 15px;
+.state-revealed, .state-concealed, .state-pending {
+    margin: 10px 10px 0px 0px;
+    padding: 6px 15px;
     border-radius: 30px;
     font-weight: bold;
     font-size: 1.1em;
@@ -160,6 +165,75 @@ table {
     color: whitesmoke;
 }
 
+.state-pending {
+    background-color: white;
+    color: darkgray;
+    border: 2px solid darkgray;
+}
+
 span {
     display: inline-block;
+}
+
+#logo {
+    max-width: 15rem;
+}
+
+#attachments-div a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#attachments-div div {
+    display: block;
+    padding: 5px 15px;
+}
+
+#attachments-div div:hover {
+    background-color: lightgrey;
+}
+
+#description-div {
+    border-radius: 3px;
+    border: 1px solid #b5b5b5;
+    padding: 15px;
+    margin: 15px 0px;
+}
+
+*/
+
+body {
+    margin: 0px;
+}
+
+#logo {
+    max-width: 14.5rem;
+}
+
+.ant-upload-wrapper {
+    display: block;
+}
+
+.ant-form-item-label > label {
+    font-size: 40px;
+}
+
+.markdown > :first-child {
+    margin-top: 0 !important;
+}
+
+.markdown > :last-child {
+    margin-bottom: 0 !important;
+}
+
+.ant-card {
+    box-shadow: 1px 1px 2px #d1d1d1; 
+}
+
+.ant-card.claim-attachment:hover {
+    box-shadow: 2px 2px 3px #d1d1d1;  
+}
+
+.claim-attachment .ant-card-meta-title {
+    margin-bottom: 0px !important;
 }

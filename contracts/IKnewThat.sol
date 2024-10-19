@@ -14,10 +14,12 @@ contract IKnewThat {
         uint publishTime;
         uint revealTime;
         string dataLoc;
+        uint nonce;
     }
 
-    mapping(bytes32 => Claim) public claims;
     uint claimCounter;
+    mapping(bytes32 => Claim) public claims;
+    mapping(uint => bytes32) public claimIdToCommitment;
 
     constructor() {
 
@@ -30,22 +32,28 @@ contract IKnewThat {
         // check this commitment does not exist
         require(claim.claimant == address(0), "Claim already exists");
         claim.id = claimCounter++;
+        claimIdToCommitment[claim.id] = commitment;
         claim.claimant = msg.sender;
         claim.publishTime = block.timestamp;
     }
 
-    function reveal(bytes32 commitment, string memory dataLoc)
+    function reveal(bytes32 commitment, string memory dataLoc, uint nonce)
         external
     {
         Claim storage claim = claims[commitment];
         // check this commitment exists
-        require(claim.claimant != address(0), "Caller is not claimant");
-        require(commitment == keccak256(abi.encodePacked(dataLoc)), "Hash does not match commitment");
+        require(claim.claimant != address(0), "Claim does not exist");
+        require(commitment == keccak256(abi.encodePacked(dataLoc, nonce)), "Hash does not match commitment");
         claim.revealTime = block.timestamp;
         claim.dataLoc = dataLoc;
+        claim.nonce = nonce;
     }
 
     function getClaim(bytes32 commitment) external view returns (Claim memory) {
         return claims[commitment];
+    }
+
+    function getClaimCommitmentFromId(uint claimId) external view returns (bytes32) {
+        return claimIdToCommitment[claimId];
     }
 }

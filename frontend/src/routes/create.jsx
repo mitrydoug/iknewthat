@@ -1,26 +1,25 @@
 import React from "react";
-import { Form, redirect, useOutletContext } from "react-router-dom";
+import { useCallback, useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button, Input, Form, Modal, Typography, Upload } from 'antd';
+import { PaperClipOutlined } from '@ant-design/icons';
+import { AppContext } from "../AppContext";
+import { TarWriter } from '@gera2ld/tarjs';
+import { useLocalStorage } from "../localStorage";
+
 // import { getIPFS } from "../ipfs";
-import { getIKnewThat } from "../iknewthat";
 
 import { ethers } from "ethers";
 
 // helia
-import { createHelia } from 'helia'
-import { car } from '@helia/car'
 import { unixfs } from '@helia/unixfs'
 import { CarWriter } from '@ipld/car'
+import { car } from '@helia/car'
 
-import { createConfirmation } from 'react-confirm';
-import CreateConfirmation from "../components/CreateConfirmation";
-
-// create confirm function
-const confirmRaw = createConfirmation(CreateConfirmation);
-
-// This is optional. But wrapping function makes it easy to use.
-function confirm(confirmation, options = {}) {
-  return confirmRaw({ confirmation, options });
-}
+const { Dragger } = Upload;
+const { TextArea } = Input;
+const { confirm } = Modal;
+const { Title, Paragraph } = Typography;
 
 /**
  *
@@ -54,6 +53,14 @@ async function readFileAsUint8Array (file) {
   })
 }
 
+function blobToBase64(blob) {
+  return new Promise((resolve, _) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
+
 /**
  *
  * @param {AsyncIterable<Uint8Array>} carReaderIterable
@@ -67,47 +74,38 @@ async function carWriterOutToBlob (carReaderIterable) {
   return new Blob(parts, { type: 'application/car' })
 }
 
-export const createClaim = (iKnewThat) => async ({ request }) => {
+export const createClaim = (iKnewThat, helia, myClaims, setMyClaims) => async (values) => {
 
-  // const ipfs = await getIPFS();
-  const rawFormData = await request.formData();
-  const formData = {};
-  Array.from(rawFormData).forEach((elem) => {
-    const k = elem[0]
-    const v = elem[1]
-    if(formData.hasOwnProperty(k)) {
-      formData[k].push(v)
-    } else {
-      formData[k] = [v]
-    }
-  });
-  Object.keys(formData).forEach(function(key, index) {
-    if(formData[key].length === 1) {
-      formData[key] = formData[key][0]
-    }
-  });
-  console.log(formData);
+  console.log("I'm here!")
+  console.log(values);
+
   const metadata = {
-    title: formData["claim-title"],
-    description: formData["claim-description"],
+    title: values["claim-title"],
+    description: values["claim-description"],
+    attachments: [],
   }
   console.log(metadata);
 
-  const helia = await createHelia()
-  const heliaFs = unixfs(helia)
-  const heliaCar = car(helia)
+  const files = (values.files?.fileList || []).map((fileObj) => fileObj.originFileObj)
+
+  const heliaFs = unixfs(helia);
+  const heliaCar = car(helia);
+
   let rootCID = await heliaFs.addDirectory()
+
+  let attchDirCid = await heliaFs.addDirectory();
+  for (const file of files) {
+    console.log(file);
+    const fileCid = await heliaFs.addBytes(await readFileAsUint8Array(file))
+    attchDirCid = await heliaFs.cp(fileCid, attchDirCid, file.name)
+    metadata.attachments.push(`attachments/${file.name}`);
+  }
+  rootCID = await heliaFs.cp(attchDirCid, rootCID, "attachments")
 
   const encoder = new TextEncoder()
   const metadataBytes = encoder.encode(JSON.stringify(metadata, null, "    "))
   const fileCid = await heliaFs.addBytes(metadataBytes)
-  rootCID = await heliaFs.cp(fileCid, rootCID, "metadata.json") 
-
-  const files = (Array.isArray(formData.files) ? formData.files : [formData.files])
-  for (const file of files) {
-    const fileCid = await heliaFs.addBytes(await readFileAsUint8Array(file))
-    rootCID = await heliaFs.cp(fileCid, rootCID, file.name)
-  }
+  rootCID = await heliaFs.cp(fileCid, rootCID, "metadata.json")
 
   const { writer, out } = await CarWriter.create(rootCID)
 
@@ -115,49 +113,95 @@ export const createClaim = (iKnewThat) => async ({ request }) => {
   await heliaCar.export(rootCID, writer)
   const carBlob = await carBlobPromise
 
-  const hash = ethers.utils.solidityKeccak256(["string"], [String(rootCID)]);
+  console.log(typeof carBlob)
+  console.log(carBlob);
 
-  if (await confirmRaw({message: "Are you sure?\n\nCommitment: " + hash})) {
+  const randomValueArr = new BigUint64Array(1);
+  crypto.getRandomValues(randomValueArr);
+  const randomValue = randomValueArr[0];
 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(carBlob);
-    a.download = metadata.title.trim().replaceAll(" ", "_") + '.car';
-    a.click();
+  const title_path = metadata.title.trim().replaceAll(" ", "_");
 
-    await iKnewThat.commit(hash);
-    
-    return redirect("/claim/" + hash);
-  }
-  return redirect("/");
+  const tarWriter = new TarWriter();
+  tarWriter.addFile(title_path + ".car", carBlob);
+  tarWriter.addFile("secret.txt", String(randomValue));
+
+  const hash = ethers.solidityPackedKeccak256(["string", "uint"], [String(rootCID), randomValue]);
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(await tarWriter.write());
+  a.download = title_path + '.claim';
+  a.click();
+
+  console.log("here");
+  console.log(iKnewThat);
+
+  await iKnewThat.commit(hash);
+
+  console.log("hereeee");
+
+  console.log(myClaims);
+  const newMyClaims = {...myClaims};
+  newMyClaims[hash] = {
+    metadata,
+    state: "created",
+  };
+  setMyClaims(newMyClaims);
+
+  return hash;
 }
 
 
 export default function CreateClaim() {
-    
+
+  const { iKnewThat, helia } = useContext(AppContext);
+  const [myClaims, setMyClaims] = useLocalStorage("myClaims", {});
+
+  const navigate = useNavigate();
+
+  const dummyRequest = useCallback((x) => {
+    setTimeout(() => {
+      x.onSuccess("ok");
+    }, 0);
+  }, []);
+
+  const submitForm = async (values) => {
+    confirm({
+      title: 'Create claim?',
+      content: 'Are you sure you want to create this claim?',
+      onOk: (async () => {
+        const hash = await createClaim(iKnewThat, helia, myClaims, setMyClaims)(values);
+        navigate("/claim/" + hash);
+      }),
+    });
+  }
+
   return (
-    <div id="claim">
-      <h1>Make Claim</h1>
-      <Form method="post" encType="multipart/form-data">
-        <h3>Add a Title</h3>
-        <input
-          id="claim-title"
-          placeholder="Title ..."
-          aria-label="claim-title"
-          type="text"
-          name="claim-title"
-        />
-        <h3>Add a Description</h3>
-        <textarea
-          id="claim-description"
-          placeholder="Description ..."
-          aria-label="claim-description"
-          type="text"
-          name="claim-description"
-        />
-        <h3>Add Files</h3>
-        <input type="file" id="files" name="files" multiple/><br/>
-        <button id="submit-claim-btn" type="submit">Submit</button>
+    <>
+      <Title level={2}>Make Claim</ Title>
+      <Form
+        layout="vertical"
+        onSubmitCapture={(event) => { event.preventDefault(); }}
+        onFinish={submitForm}
+      >
+        <Form.Item label="Add a Title" name="claim-title">
+          <Input type="text" placeholder="Title ..." />
+        </Form.Item>
+        
+        <Form.Item label="Add a Description" name="claim-description">
+          <TextArea placeholder="Description ..."/>
+        </ Form.Item>
+        <Form.Item label="Add Files" name="files">
+          <Dragger file multiple
+            style={{ display: 'block' }}
+            customRequest={dummyRequest}
+          >
+            <PaperClipOutlined style={{fontSize: 36, color: '#aaaaaa'}}/>
+            <p className="ant-upload-text" style={{color: '#aaaaaa'}}>Attach files to this claim</p>
+          </Dragger>
+        </Form.Item>
+        <Button id="submit-claim-btn" type="primary" htmlType="submit">Submit</Button>
       </Form>
-    </div>
+    </>
   );
 }
