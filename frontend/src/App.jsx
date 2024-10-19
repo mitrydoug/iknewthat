@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { NoWalletDetected } from "./components/NoWalletDetected";
 import { ConnectWallet } from "./components/ConnectWallet";
+import { Button, Spin } from "antd";
 
 import {
     QueryClient,
@@ -46,28 +47,17 @@ export default function App() {
         }
     }, [window.ethereum]);
 
-    if (iKnewThat === null && provider !== null) {
-        provider.getSigner().then((signer) => {
-            setIKnewThat(
-                new ethers.Contract(
-                    contractAddress.IKnewThat,
-                    IKnewThatArtifact.abi,
-                    signer,
-                )
-            );
-        });
-    }
+    const initContract = (signer) => {
+        setIKnewThat(
+            new ethers.Contract(
+                contractAddress.IKnewThat,
+                IKnewThatArtifact.abi,
+                signer,
+            )
+        );
+    };
 
-    console.log(iKnewThat);
-
-    const blockstore = useMemo(() => {
-        return new MemoryBlockstore();
-    });
-
-    const queryClient = new QueryClient()
-
-    if (connState == "unknown") {
-        
+    if (connState == "unknown" && provider !== null) {
         provider.listAccounts().then((accounts) => {
             if (accounts.length === 0) {
                 setConnState("not_connected");
@@ -75,15 +65,13 @@ export default function App() {
                 setConnState("connected");
             }
         });
-
-        return <Loading />;
-    } else if (connState == "not_connected") {
-        return <ConnectWallet setConnState={setConnState}/>;
     }
 
-    if (window.ethereum === undefined) {
-        return <NoWalletDetected />;
+    if (iKnewThat === null && provider !== null && connState === "connected") {
+        provider.getSigner().then(signer => initContract(signer));
     }
+
+    console.log(iKnewThat);
 
     if(!helia) {
         createHeliaHTTP({
@@ -100,9 +88,25 @@ export default function App() {
 
     console.log(helia);
 
-    if (iKnewThat === null) {
-        return <Loading />
-    }
+    const homeElem = provider === null ? (
+        <>
+            <p>No wallet detected. Create an account with <a href="https://metamask.io/">MetaMask</a> and install their browser extension.</p>
+        </>
+    ) : connState === "unknown" ? (
+        <Spin />
+    ) : connState === "not_connected" ? (
+        <Button
+          type="primary"
+          onClick={() => { provider.getSigner().then(signer => initContract(signer)) }}>
+            Connect Wallet
+        </Button>
+    ) : (
+        <>
+            <h1>Welcome!</h1>
+            <p>This is an experimental site!</p>
+        </>
+    );
+
 
     const routes = [
         {
@@ -111,6 +115,10 @@ export default function App() {
             errorElement: <ErrorPage />,
             action: indexLookup,
             children: [
+                {
+                    index: true,
+                    element: homeElem,
+                },
                 {
                     path: "claim/:p_commitHash",
                     element: <Claim/>,
@@ -130,8 +138,8 @@ export default function App() {
             ],
         },
     ];
-
     const router = createBrowserRouter(routes, { basename: baseUrl });
+    const queryClient = new QueryClient();
 
     return (
         <QueryClientProvider client={queryClient}>
@@ -139,6 +147,5 @@ export default function App() {
                 <RouterProvider router={router} />
             </AppContext.Provider>
         </QueryClientProvider>
-        
     );
 }
