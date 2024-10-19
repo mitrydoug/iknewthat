@@ -29,6 +29,8 @@ import { createVerifiedFetch } from "@helia/verified-fetch";
 import { MemoryBlockstore } from 'blockstore-core';
 import { Loading } from "./components/Loading";
 
+const baseUrl = import.meta.env.BASE_URL;
+
 export default function App() {
 
     const [connState, setConnState] = useState("unknown");
@@ -102,7 +104,7 @@ export default function App() {
         return <Loading />
     }
 
-    const router = createBrowserRouter([
+    const routes = [
         {
             path: "/iknewthat/",
             element: <Root />,
@@ -127,7 +129,9 @@ export default function App() {
                 },
             ],
         },
-    ]);
+    ];
+
+    const router = createBrowserRouter(routes, { basename: baseUrl });
 
     return (
         <QueryClientProvider client={queryClient}>

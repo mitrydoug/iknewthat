@@ -5,7 +5,7 @@ import { Button, Col, Flex, Form, Layout, Image, Input, Row } from "antd";
 const { Search } = Input;
 const { Header, Footer, Sider, Content } = Layout;
 
-
+const baseUrl = import.meta.env.BASE_URL;
 
 export const lookup = async ({ request }) => {
   const formData = Object.fromEntries(await request.formData());
@@ -58,7 +58,7 @@ export default function Root() {
           <Row align="middle" style={{ width: "100%" }} gutter={24}>
             <Col flex="auto">
               <Flex justify="flex-end">
-                <a href="/"><Image id="logo" src="/logo.png" preview={false} /></a>
+                <a href={baseUrl}><Image id="logo" src={`${baseUrl}/logo.png`} preview={false} /></a>
               </Flex>
             </Col>
             <Col flex="50rem">
