@@ -106,7 +106,7 @@ export default function App() {
 
     const routes = [
         {
-            path: "/iknewthat/",
+            path: "/",
             element: <Root />,
             errorElement: <ErrorPage />,
             action: indexLookup,
