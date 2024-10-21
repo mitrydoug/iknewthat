@@ -1,9 +1,10 @@
+import { FC } from "react";
 import { useParams } from "react-router-dom";
 import { timeDeltaFormat } from "../utils";
 import { Loading } from "../components/Loading";
 import { AppContext } from "../AppContext"
 import { useContext, useState } from "react";
-import { Avatar, Card, Divider, Flex, Tag, Tooltip, Typography } from "antd";
+import { Card, Flex, Tag, Tooltip, Typography } from "antd";
 import { EyeOutlined, EyeInvisibleOutlined, FileImageOutlined, SyncOutlined } from '@ant-design/icons';
 import { useQuery } from "@tanstack/react-query";
 import { useLocalStorage } from "../localStorage";
@@ -16,44 +17,13 @@ import { CID } from 'multiformats/cid'
 const { Paragraph, Title } = Typography;
 const { Meta } = Card;
 
-
-const loadData = async (cidStr, helia, fetch) => {
-  const resp = await fetch("ipfs://" + cidStr);
-
-  const heliaFs = unixfs(helia);
-
-  var mdCid = null;
-  var attachmentsCid = null;
-  for await (const entry of heliaFs.ls(cidStr)) {
-    console.info(entry)
-    if(entry.name === "metadata.json") {
-      mdCid = entry.cid;
-    } else if (entry.name == "attachments") {
-      attachmentsCid = entry.cid;
-    }
-  }
-
-  const decoder = new TextDecoder()
-  var metadata = "";
-  for await (const buf of heliaFs.cat(mdCid)) {
-    metadata += decoder.decode(buf);
-  }
-  console.log(metadata);
-  metadata = JSON.parse(metadata);
-  console.log(metadata);
-
-  const attachments = {}
-  for await (const entry of heliaFs.ls(attachmentsCid)) {
-    attachments[entry.name] = [];
-    for await (const buf of heliaFs.cat(entry.cid)) {
-      attachments[entry.name].push(buf);
-    }
-  }
-  console.log(attachments);
-
-  return [metadata, attachments];
-};
-
+interface ClaimImplProps {
+  iKnewThat: any;
+  helia: any;
+  p_claimId: String;
+  p_commitHash: String;
+  key: [String, String];
+}
 
 export default function Claim() {
 
@@ -73,7 +43,7 @@ export default function Claim() {
   );
 }
 
-const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
+const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
   const [claim, setClaim] = useState(null);

@@ -8,7 +8,7 @@ export async function getIPFS() {
     const account = await client.login("mrdouglass95@gmail.com");
     console.log("B");
 
-    while (true) {
+    while (true) { // eslint-disable-line
         const res = await account.plan.get();
         if (res.ok) break;
         console.log('Waiting for payment plan to be selected...');

@@ -1,6 +1,5 @@
+import React from "react";
 import { useState, useMemo } from "react";
-import { NoWalletDetected } from "./components/NoWalletDetected";
-import { ConnectWallet } from "./components/ConnectWallet";
 import { Button, Spin } from "antd";
 
 import {
@@ -24,18 +23,14 @@ import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 import ErrorPage from "./error-page";
 import Root, { lookup as indexLookup } from "./routes/root";
 import Claim from "./routes/claim";
-import CreateClaim, { createClaim } from "./routes/create";
-import RevealClaim, { revealClaim } from "./routes/reveal";
-import { createVerifiedFetch } from "@helia/verified-fetch";
-import { MemoryBlockstore } from 'blockstore-core';
-import { Loading } from "./components/Loading";
+import CreateClaim from "./routes/create";
+import RevealClaim  from "./routes/reveal";
 
 const baseUrl = import.meta.env.BASE_URL;
 
 export default function App() {
 
     const [connState, setConnState] = useState("unknown");
-    const [fetch, setFetch] = useState(null);
     const [helia, setHelia] = useState(null);
     const [iKnewThat, setIKnewThat] = useState(null);
     

@@ -1,6 +1,6 @@
 import React from "react";
 import { useContext, useState } from "react";
-import { useNavigate, useOutletContext, useSubmit } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { SelectOutlined, CheckOutlined } from '@ant-design/icons';
 import { Avatar, Button, Flex, Form, Image, Input, Modal, Space, Typography, Upload } from 'antd';
 import { AppContext } from "../AppContext"
@@ -13,75 +13,8 @@ import { ethers } from "ethers";
 // ipfs
 import { CarReader } from '@ipld/car'
 
-const { Dragger } = Upload;
 const { Title } = Typography;
 const { confirm } = Modal;
-
-/**
- *
- * @param {File} file
- * @returns {Promise<Uint8Array>}
- */
-async function readFileAsUint8Array (file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const arrayBuffer = reader.result
-      if (arrayBuffer != null) {
-        if (typeof arrayBuffer === 'string') {
-          const uint8Array = new TextEncoder().encode(arrayBuffer)
-          resolve(uint8Array)
-        } else if (arrayBuffer instanceof ArrayBuffer) {
-          const uint8Array = new Uint8Array(arrayBuffer)
-          resolve(uint8Array)
-        }
-        return
-      }
-      reject(new Error('arrayBuffer is null'))
-    }
-
-    reader.onerror = (error) => {
-      reject(error)
-    }
-
-    reader.readAsArrayBuffer(file)
-  })
-}
-
-async function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const result = reader.result
-      if (result != null) {
-        resolve(result); 
-        return;
-      }
-      reject(new Error('arrayBuffer is null'))
-    }
-
-    reader.onerror = (error) => {
-      reject(error)
-    }
-
-    reader.readAsText(file)
-  })
-}
-
-/**
- *
- * @param {AsyncIterable<Uint8Array>} carReaderIterable
- * @returns {Promise<Blob>}
- */
-async function carWriterOutToBlob (carReaderIterable) {
-  const parts = []
-  for await (const part of carReaderIterable) {
-    parts.push(part)
-  }
-  return new Blob(parts, { type: 'application/car' })
-}
 
 export const revealClaim = (iKnewThat, W3SClient, account, myClaims, setMyClaims) => async (values) => {
 
@@ -137,7 +70,7 @@ export default function RevealClaim() {
 
   const [ w3sModalOpen, setW3sModalOpen ] = useState(false);
   const [ waitEmail, setWaitEmail] = useState(false);
-  const { iKnewThat, helia } = useContext(AppContext);
+  const { iKnewThat } = useContext(AppContext);
   const [ W3SClient, setW3SClient ] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
@@ -179,14 +112,13 @@ export default function RevealClaim() {
     console.log(client.accounts());
     const account = await client.login(email);
     console.log(account);
-    while (true) {
-      const res = await account.plan.get()
-      if (res.ok) break
-      console.log('Waiting for payment plan to be selected...')
-      await new Promise(resolve => setTimeout(resolve, 1000))
+    while (true) { // eslint-disable-line
+      const res = await account.plan.get();
+      if (res.ok) break;
+      console.log('Waiting for payment plan to be selected...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    console.log(space.did())
     //const what = await account.provision(space.did())
     //const g = await space.save()
     
@@ -221,7 +153,7 @@ export default function RevealClaim() {
           <Form.Item name="claim-file">
             <Upload
               accept=".claim"
-              action={async (file) => { return null; }}
+              action={async (_file) => { return null; }}
               customRequest={dummyRequest}
             >
               <Button icon={<SelectOutlined />}>Choose Claim</Button>

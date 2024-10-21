@@ -1,9 +1,9 @@
 import React from "react";
 import { Link, Outlet, redirect, useSubmit } from "react-router-dom";
-import { Button, Col, Flex, Form, Layout, Image, Input, Row } from "antd";
+import { Button, Col, Flex, Layout, Image, Input, Row } from "antd";
 
 const { Search } = Input;
-const { Header, Footer, Sider, Content } = Layout;
+const { Header, Footer, Content } = Layout;
 
 const baseUrl = import.meta.env.BASE_URL;
 
@@ -48,10 +48,6 @@ export default function Root() {
 
   const submit = useSubmit();
 
-  const doSubmit = () => {
-    submit(null, {method: "post"});
-  };
-
   return (
       <Layout style={{ height: '100vh' }}>
         <Header style={headerStyle}>
@@ -66,8 +62,10 @@ export default function Root() {
                 <Search
                   placeholder="input search text"
                   allowClear
-                  onSearch={(value, event, { source }) => {
-                    source === "input" ? submit({commitOrId: value}, { method: "post" }) : null; 
+                  onSearch={(value, _event, { source }) => {
+                    if (source === "input") {
+                      submit({commitOrId: value}, { method: "post" });
+                    }
                   }}
                   size="medium"
                 />
