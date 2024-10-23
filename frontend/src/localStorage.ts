@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export function getLocalStorage(key, defaultValue) {
   // getting stored value

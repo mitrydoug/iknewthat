@@ -1,9 +1,10 @@
+import { FC } from "react";
 import { useParams } from "react-router-dom";
 import { timeDeltaFormat } from "../utils";
 import { Loading } from "../components/Loading";
-import { AppContext } from "../AppContext"
+import { AppContext, AppState } from "../AppContext"
 import { useContext, useState } from "react";
-import { Avatar, Card, Divider, Flex, Tag, Tooltip, Typography } from "antd";
+import { Card, Flex, Tag, Tooltip, Typography } from "antd";
 import { EyeOutlined, EyeInvisibleOutlined, FileImageOutlined, SyncOutlined } from '@ant-design/icons';
 import { useQuery } from "@tanstack/react-query";
 import { useLocalStorage } from "../localStorage";
@@ -12,71 +13,48 @@ import { unixfs } from '@helia/unixfs'
 import Markdown from "react-markdown"; 
 import remarkGfm from "remark-gfm";
 import { CID } from 'multiformats/cid'
+import { ethers } from "ethers";
+import { Helia } from "@helia/http";
 
 const { Paragraph, Title } = Typography;
 const { Meta } = Card;
 
+interface ClaimImplProps {
+  iKnewThat: ethers.Contract;
+  helia: Helia;
+  p_claimId?: string;
+  p_commitHash?: string;
+}
 
-const loadData = async (cidStr, helia, fetch) => {
-  const resp = await fetch("ipfs://" + cidStr);
-
-  const heliaFs = unixfs(helia);
-
-  var mdCid = null;
-  var attachmentsCid = null;
-  for await (const entry of heliaFs.ls(cidStr)) {
-    console.info(entry)
-    if(entry.name === "metadata.json") {
-      mdCid = entry.cid;
-    } else if (entry.name == "attachments") {
-      attachmentsCid = entry.cid;
-    }
-  }
-
-  const decoder = new TextDecoder()
-  var metadata = "";
-  for await (const buf of heliaFs.cat(mdCid)) {
-    metadata += decoder.decode(buf);
-  }
-  console.log(metadata);
-  metadata = JSON.parse(metadata);
-  console.log(metadata);
-
-  const attachments = {}
-  for await (const entry of heliaFs.ls(attachmentsCid)) {
-    attachments[entry.name] = [];
-    for await (const buf of heliaFs.cat(entry.cid)) {
-      attachments[entry.name].push(buf);
-    }
-  }
-  console.log(attachments);
-
-  return [metadata, attachments];
-};
-
+interface Claim {
+  id: number;
+  claimant: string;
+  publishTime: bigint;
+  revealTime: bigint;
+  dataLoc: string;
+  nonce: bigint;
+}
 
 export default function Claim() {
 
   //const { commitHash, claim, metadata } = useLoaderData();
 
-  const { iKnewThat, helia } = useContext(AppContext);
+  const { iKnewThat, helia } = useContext(AppContext) as AppState;
   const { p_claimId, p_commitHash } = useParams();
-
 
   return (
     <ClaimImpl
       iKnewThat={iKnewThat}
       helia={helia}
       p_claimId={p_claimId}
-      p_commitHash={p_commitHash}
-      key={[p_claimId, p_commitHash]} />
+      p_commitHash={p_commitHash} />
   );
 }
 
-const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
+const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
-  const [claim, setClaim] = useState(null);
+  const [claim, setClaim] = useState<Claim | null>(null);
   const [myClaims, _setMyClaims] = useLocalStorage("myClaims", {});
   console.log(myClaims);
 
@@ -92,10 +70,14 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
   } = useQuery({
     queryKey: [claim?.dataLoc],
     queryFn: async () => {
-      const fs = unixfs(helia)
-      // const res = await fs.ls(CID.parse(claim.dataLoc));
 
-      var mdCid = null;
+      if (claim === null) {
+        return;
+      }
+
+      const fs = unixfs(helia)
+
+      let mdCid: CID | null = null;
       for await (const entry of fs.ls(CID.parse(claim.dataLoc))) {
         console.info(entry);
         if(entry.name === "metadata.json") {
@@ -103,8 +85,12 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
         }
       }
 
+      if (mdCid === null) {
+        return null;
+      }
+
       const decoder = new TextDecoder()
-      var metadata = "";
+      let metadata = "";
       for await (const buf of fs.cat(mdCid)) {
         metadata += decoder.decode(buf);
       }
@@ -134,15 +120,17 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
     return <Loading />;
   }
 
-  var claimId = null;
-  var claimant = null;
-  var commitTime = null;
-  var revealTime = null;
-  var revealed = null;
-  var pending = null;
-  var stateTag = null;
+  const commitHashStr = (commitHash as string);
 
-  const myClaim = myClaims[commitHash];
+  let claimId: string | null = null;
+  let claimant: string | null = null;
+  let commitTime: Date | null = null;
+  let revealTime: Date | null = null;
+  let revealed: boolean | null = null;
+  let pending = false;
+  let stateTag: JSX.Element | null = null;
+
+  const myClaim = myClaims[commitHashStr];
   console.log(myClaim);
 
   if(claim.publishTime > 0n) {
@@ -169,7 +157,7 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
       ) :
       <Tag color="grey"><EyeInvisibleOutlined/> Concealed</Tag>
     );
-  } else if (commitHash in myClaims) {
+  } else if (commitHashStr in myClaims) {
     claimId = "?";
     claimant = "you";
     revealed = false;
@@ -180,7 +168,7 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
       </Tooltip>
     );
     setTimeout(() => {
-      iKnewThat.getClaim(commitHash).then((claim) => {
+      iKnewThat.getClaim(commitHashStr).then((claim) => {
         setClaim(claim);
       });
     }, 2000);
@@ -196,7 +184,7 @@ const ClaimImpl = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
   const localeStr = commitTime ? commitTime.toLocaleString(undefined, options): null;
 
   const claimantShort = claimant.substring(0, 9);
-  const commitShort = commitHash.substring(0, 9);
+  const commitShort = commitHashStr.substring(0, 9);
 
   const title = metadata ? metadata.title : "Claim";
   const description = metadata?.description;
