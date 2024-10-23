@@ -1,5 +1,4 @@
-import React from "react";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Form, Modal, Typography, Upload } from 'antd';
 import { PaperClipOutlined } from '@ant-design/icons';
@@ -19,7 +18,7 @@ import { car } from '@helia/car'
 const { Dragger } = Upload;
 const { TextArea } = Input;
 const { confirm } = Modal;
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 /**
  *
@@ -51,14 +50,6 @@ async function readFileAsUint8Array (file) {
 
     reader.readAsArrayBuffer(file)
   })
-}
-
-function blobToBase64(blob) {
-  return new Promise((resolve, _) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-  });
 }
 
 /**
