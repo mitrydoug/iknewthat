@@ -1,8 +1,8 @@
-import { FC } from "react";
+import React, { FC } from "react";
 import { useParams } from "react-router-dom";
 import { timeDeltaFormat } from "../utils";
 import { Loading } from "../components/Loading";
-import { AppContext } from "../AppContext"
+import { AppContext, AppState } from "../AppContext"
 import { useContext, useState } from "react";
 import { Card, Flex, Tag, Tooltip, Typography } from "antd";
 import { EyeOutlined, EyeInvisibleOutlined, FileImageOutlined, SyncOutlined } from '@ant-design/icons';
@@ -13,40 +13,48 @@ import { unixfs } from '@helia/unixfs'
 import Markdown from "react-markdown"; 
 import remarkGfm from "remark-gfm";
 import { CID } from 'multiformats/cid'
+import { ethers } from "ethers";
+import { Helia } from "@helia/http";
 
 const { Paragraph, Title } = Typography;
 const { Meta } = Card;
 
 interface ClaimImplProps {
-  iKnewThat: any;
-  helia: any;
-  p_claimId: String;
-  p_commitHash: String;
-  key: [String, String];
+  iKnewThat: ethers.Contract;
+  helia: Helia;
+  p_claimId?: string;
+  p_commitHash?: string;
+}
+
+interface Claim {
+  id: number;
+  claimant: string;
+  publishTime: bigint;
+  revealTime: bigint;
+  dataLoc: string;
+  nonce: bigint;
 }
 
 export default function Claim() {
 
   //const { commitHash, claim, metadata } = useLoaderData();
 
-  const { iKnewThat, helia } = useContext(AppContext);
+  const { iKnewThat, helia } = useContext(AppContext) as AppState;
   const { p_claimId, p_commitHash } = useParams();
-
 
   return (
     <ClaimImpl
       iKnewThat={iKnewThat}
       helia={helia}
       p_claimId={p_claimId}
-      p_commitHash={p_commitHash}
-      key={[p_claimId, p_commitHash]} />
+      p_commitHash={p_commitHash} />
   );
 }
 
 const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
-  const [claim, setClaim] = useState(null);
+  const [claim, setClaim] = useState<Claim | null>(null);
   const [myClaims, _setMyClaims] = useLocalStorage("myClaims", {});
   console.log(myClaims);
 
@@ -62,10 +70,14 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
   } = useQuery({
     queryKey: [claim?.dataLoc],
     queryFn: async () => {
-      const fs = unixfs(helia)
-      // const res = await fs.ls(CID.parse(claim.dataLoc));
 
-      var mdCid = null;
+      if (claim === null) {
+        return;
+      }
+
+      const fs = unixfs(helia)
+
+      let mdCid: CID | null = null;
       for await (const entry of fs.ls(CID.parse(claim.dataLoc))) {
         console.info(entry);
         if(entry.name === "metadata.json") {
@@ -73,8 +85,12 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
         }
       }
 
+      if (mdCid === null) {
+        return null;
+      }
+
       const decoder = new TextDecoder()
-      var metadata = "";
+      let metadata = "";
       for await (const buf of fs.cat(mdCid)) {
         metadata += decoder.decode(buf);
       }
@@ -104,15 +120,17 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
     return <Loading />;
   }
 
-  var claimId = null;
-  var claimant = null;
-  var commitTime = null;
-  var revealTime = null;
-  var revealed = null;
-  var pending = null;
-  var stateTag = null;
+  const commitHashStr = (commitHash as string);
 
-  const myClaim = myClaims[commitHash];
+  let claimId: string | null = null;
+  let claimant: string | null = null;
+  let commitTime: Date | null = null;
+  let revealTime: Date | null = null;
+  let revealed: boolean | null = null;
+  let pending = false;
+  let stateTag: JSX.Element | null = null;
+
+  const myClaim = myClaims[commitHashStr];
   console.log(myClaim);
 
   if(claim.publishTime > 0n) {
@@ -139,7 +157,7 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
       ) :
       <Tag color="grey"><EyeInvisibleOutlined/> Concealed</Tag>
     );
-  } else if (commitHash in myClaims) {
+  } else if (commitHashStr in myClaims) {
     claimId = "?";
     claimant = "you";
     revealed = false;
@@ -150,7 +168,7 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
       </Tooltip>
     );
     setTimeout(() => {
-      iKnewThat.getClaim(commitHash).then((claim) => {
+      iKnewThat.getClaim(commitHashStr).then((claim) => {
         setClaim(claim);
       });
     }, 2000);
@@ -166,7 +184,7 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
   const localeStr = commitTime ? commitTime.toLocaleString(undefined, options): null;
 
   const claimantShort = claimant.substring(0, 9);
-  const commitShort = commitHash.substring(0, 9);
+  const commitShort = commitHashStr.substring(0, 9);
 
   const title = metadata ? metadata.title : "Claim";
   const description = metadata?.description;
