@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, Outlet, redirect, useSubmit } from "react-router-dom";
 import { Button, Col, Flex, Layout, Image, Input, Row } from "antd";
 
