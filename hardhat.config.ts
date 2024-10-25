@@ -1,9 +1,10 @@
-require("@nomicfoundation/hardhat-toolbox");
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
 
 // The next line is part of the sample project, you don't need it in your
 // project. It imports a Hardhat task definition, that can be used for
 // testing the frontend.
-require("./tasks/faucet");
+import "./tasks/faucet";
 
 // Ensure your configuration variables are set before executing the script
 const { vars } = require("hardhat/config");
@@ -20,8 +21,7 @@ const INFURA_API_KEY = vars.get("INFURA_API_KEY");
 // Beware: NEVER put real Ether into testing accounts
 const SEPOLIA_PRIVATE_KEY = vars.get("SEPOLIA_PRIVATE_KEY");
 
-/** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+const config: HardhatUserConfig = {
   solidity: "0.8.17",
   networks: {
     sepolia: {
@@ -30,3 +30,5 @@ module.exports = {
     },
   },
 };
+
+export default config;
