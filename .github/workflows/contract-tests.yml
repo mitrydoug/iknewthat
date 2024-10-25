@@ -24,8 +24,5 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: Dummy vars
-        run: npx hardhat vars set INFURA_API_KEY '' && \
-             npx hardhat vars set SEPOLIA_PRIVATE_KEY '' 
       - name: Test
         run: npm run test
