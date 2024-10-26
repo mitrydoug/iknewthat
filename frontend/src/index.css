@@ -237,3 +237,7 @@ body {
 .claim-attachment .ant-card-meta-title {
     margin-bottom: 0px !important;
 }
+
+a {
+    color: steelblue !important;
+}
