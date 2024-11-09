@@ -12,6 +12,7 @@ const { vars } = require("hardhat/config");
 // Go to https://infura.io, sign up, create a new API key
 // in its dashboard, and add it to the configuration variables
 const INFURA_API_KEY = vars.get("INFURA_API_KEY", null);
+console.log(INFURA_API_KEY);
 
 // Add your Sepolia account private key to the configuration variables
 // To export your private key from Coinbase Wallet, go to
@@ -29,7 +30,16 @@ const config: HardhatUserConfig = {
         sepolia: {
           url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
           accounts: [SEPOLIA_PRIVATE_KEY],
-        }
+        },
+        arbitrumSepolia: {
+          url: 'https://sepolia-rollup.arbitrum.io/rpc',
+          chainId: 421614,
+          accounts: [SEPOLIA_PRIVATE_KEY],
+        },
+        /*arbitrumOne: {
+          url: 'https://arb1.arbitrum.io/rpc',
+          //accounts: [ARBITRUM_MAINNET_TEMPORARY_PRIVATE_KEY]
+        },*/
       } : {}
     ),
   },
