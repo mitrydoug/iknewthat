@@ -1,5 +1,6 @@
 import { Link, Outlet, redirect, useSubmit } from "react-router-dom";
-import { Button, Col, Flex, Layout, Image, Input, Row } from "antd";
+import { Avatar, Button, Col, Flex, Layout, Image, Input, Row, Space, Popover } from "antd";
+import { UserOutlined } from '@ant-design/icons';
 
 const { Search } = Input;
 const { Header, Footer, Content } = Layout;
@@ -25,7 +26,6 @@ const headerStyle = {
   backgroundColor: '#ffffff',
   padding: '10px',
   display: 'flex',
-  height: '80px',
 };
 
 const contentStyle = {
@@ -33,6 +33,8 @@ const contentStyle = {
   // minHeight: 120,
   lineHeight: '120px',
   marginTop: '10px',
+  overflowY: 'auto',
+  height: '100%',
 };
 
 const footerStyle = {
@@ -48,18 +50,16 @@ export default function Root() {
   const submit = useSubmit();
 
   return (
-      <Layout style={{ height: '100vh' }}>
+      <Layout>
         <Header style={headerStyle}>
-          <Row align="middle" style={{ width: "100%" }} gutter={24}>
-            <Col flex="auto">
-              <Flex justify="flex-end">
+          <Flex align="center" gap="middle" justify="space-between" style={{ width: "100%" }} wrap={false}>
+              <div style={{ minWidth: "calc((100vw - 55rem) / 2)", textAlign: "right" }}>
                 <a href={baseUrl}><Image id="logo" src={`${baseUrl}/logo.png`} preview={false} /></a>
-              </Flex>
-            </Col>
-            <Col flex="50rem">
-              <Flex align="center" >
+              </div>
+              <div style={{ flex: "1" }}>
                 <Search
-                  placeholder="input search text"
+                  style={{ display: "block", maxWidth: "50rem" }}
+                  placeholder="Claim id or commitment hash"
                   allowClear
                   onSearch={(value, _event, { source }) => {
                     if (source === "input") {
@@ -68,19 +68,18 @@ export default function Root() {
                   }}
                   size="medium"
                 />
-              </Flex>
-            </Col>
-            <Col flex="auto">
-              <Flex align="center" gap="middle">
-                <Link to="/claim/create">
-                  <Button>Make Claim</Button>
-                </Link>
-                <Link to="/claim/reveal">
-                  <Button>Reveal Claim</Button>
-                </Link>
-              </Flex>
-            </Col>
-          </Row>
+              </div>
+              <Link to="/claim/create">
+                <Button>Make Claim</Button>
+              </Link>
+              <Link to="/claim/reveal">
+                <Button>Reveal Claim</Button>
+              </Link>
+              <Popover content={<Button type="primary">Connect</Button>}>
+                <Avatar size="large" icon={<UserOutlined />} />
+              </Popover>
+              
+          </Flex>
         </Header>
         <Content style={contentStyle}>
           <Row justify="center" style={{width: '100%'}}>
@@ -88,8 +87,10 @@ export default function Root() {
               <Outlet />
             </Col>
           </Row>
+          <Footer style={footerStyle}>Made by Mitchell Douglass</Footer>
         </Content>
-        <Footer style={footerStyle}>Made by Mitchell Douglass</Footer>
       </Layout>
   );
 }
+
+/**/
