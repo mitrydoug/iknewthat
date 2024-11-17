@@ -3,7 +3,7 @@ import { Typography } from 'antd';
 
 const { Title, Paragraph, Text, Link } = Typography;
 
-const HomeInfo = () => {
+const About = () => {
     return (
         <>
             <Title level={1}>Welcome to iKnewThat!</Title>
@@ -28,4 +28,4 @@ const HomeInfo = () => {
     );
 }
 
-export default HomeInfo;
+export default About;

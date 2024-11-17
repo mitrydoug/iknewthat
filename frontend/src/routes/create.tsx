@@ -1,5 +1,5 @@
 import { useCallback, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Button, Input, Form, Modal, Typography, Upload } from 'antd';
 import { PaperClipOutlined } from '@ant-design/icons';
 import { AppContext } from "../AppContext";
@@ -167,9 +167,13 @@ export default function CreateClaim() {
     });
   }
 
+  if (iKnewThat === null) {
+    return <Navigate to="/connect" replace />;
+  }
+
   return (
     <>
-      <Title level={2}>Make Claim</ Title>
+      <Title level={2}>Create Claim</ Title>
       <Form
         layout="vertical"
         onSubmitCapture={(event) => { event.preventDefault(); }}

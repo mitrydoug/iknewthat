@@ -44,6 +44,7 @@ export default function Claim() {
 
   return (
     <ClaimImpl
+      key={[p_claimId, p_commitHash]}
       iKnewThat={iKnewThat}
       helia={helia}
       p_claimId={p_claimId}
@@ -53,7 +54,10 @@ export default function Claim() {
 
 const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
+  console.log(p_claimId, p_commitHash);
+
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
+  console.log(commitHash);
   const [claim, setClaim] = useState<Claim | null>(null);
   const [myClaims, _setMyClaims] = useLocalStorage("myClaims", {});
   console.log(myClaims);

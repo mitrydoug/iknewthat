@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { SelectOutlined, CheckOutlined } from '@ant-design/icons';
 import { Avatar, Button, Flex, Form, Image, Input, Modal, Space, Typography, Upload } from 'antd';
 import { AppContext } from "../AppContext"
@@ -14,6 +14,8 @@ import { CarReader } from '@ipld/car'
 
 const { Title } = Typography;
 const { confirm } = Modal;
+
+const baseUrl = import.meta.env.BASE_URL;
 
 export const revealClaim = (iKnewThat, W3SClient, account, myClaims, setMyClaims) => async (values) => {
 
@@ -74,6 +76,10 @@ export default function RevealClaim() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const [myClaims, setMyClaims] = useLocalStorage("myClaims", {});
+
+  if (iKnewThat === null) {
+    return <Navigate to="/connect" replace />
+  }
 
   const dummyRequest = ({ onSuccess }) => {
     setTimeout(() => {
@@ -139,7 +145,7 @@ export default function RevealClaim() {
       <Space direction="vertical">
         <Title level={2}>Reveal Claim</ Title>
         <Flex gap="middle">
-          <Avatar icon={<Image src="/web3storage_logo.png"/>}/>
+          <Avatar icon={<Image src={`${baseUrl}/web3storage_logo.png`} preview={false} />}/>
           {W3SClient && Object.keys(W3SClient.accounts()).length > 0 ?
             <CheckOutlined style={{ color: "green" }}/> :
             <Button onClick={showW3sModal}>Connect Web3Storage</Button>}

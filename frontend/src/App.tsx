@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button, Spin, Typography } from "antd";
 
 import {
@@ -20,51 +20,37 @@ import { createHeliaHTTP } from '@helia/http'
 import { delegatedHTTPRouting, httpGatewayRouting } from '@helia/routers'
 
 import ErrorPage from "./error-page";
-import Root, { lookup as indexLookup } from "./routes/root";
+import Root from "./routes/root";
 import Claim from "./routes/claim";
 import CreateClaim from "./routes/create";
 import RevealClaim  from "./routes/reveal";
-import HomeInfo from "./routes/about";
+import Index from "./routes/index";
+import About from "./routes/about";
+import Connect from "./routes/connect";
+import { useWallet } from "./wallet";
 
 const baseUrl = import.meta.env.BASE_URL;
 
 export default function App() {
 
-    const [connState, setConnState] = useState("unknown");
+    const wallet = useWallet();
+    const { provider, walletState, connectWallet } = wallet;
     const [helia, setHelia] = useState(null);
     const [iKnewThat, setIKnewThat] = useState(null);
-    
-    const provider = useMemo(() => {
-        if (window.ethereum) {
-            return new ethers.BrowserProvider(window.ethereum);
-        } else {
-            return null;
+
+    useEffect(() => {
+        if (provider && walletState === "connected") {
+            provider.getSigner().then(signer => {
+                setIKnewThat(
+                    new ethers.Contract(
+                        contractAddress.IKnewThat,
+                        IKnewThatArtifact.abi,
+                        signer,
+                    )
+                );
+            });
         }
-    }, [window.ethereum]);
-
-    const initContract = (signer) => {
-        setIKnewThat(
-            new ethers.Contract(
-                contractAddress.IKnewThat,
-                IKnewThatArtifact.abi,
-                signer,
-            )
-        );
-    };
-
-    if (connState == "unknown" && provider !== null) {
-        provider.listAccounts().then((accounts) => {
-            if (accounts.length === 0) {
-                setConnState("not_connected");
-            } else {
-                setConnState("connected");
-            }
-        });
-    }
-
-    if (iKnewThat === null && provider !== null && connState === "connected") {
-        provider.getSigner().then(signer => initContract(signer));
-    }
+    }, [walletState]);
 
     console.log(iKnewThat);
 
@@ -83,32 +69,19 @@ export default function App() {
 
     console.log(helia);
 
-    /*const homeElem = provider === null ? (
-        <>
-            <p>No wallet detected. Create an account with <a href="https://metamask.io/">MetaMask</a> and install their browser extension.</p>
-        </>
-    ) : connState === "unknown" ? (
-        <Spin />
-    ) : connState === "not_connected" ? (
-        <Button
-          type="primary"
-          onClick={() => { provider.getSigner().then(signer => initContract(signer)) }}>
-            Connect Wallet
-        </Button>
-    ) : ( 
-    );*/
-
-
     const routes = [
         {
             path: "/",
             element: <Root />,
             errorElement: <ErrorPage />,
-            action: indexLookup,
             children: [
                 {
                     index: true,
-                    element: <HomeInfo />,
+                    element: <Index />,
+                },
+                {
+                    path: "connect",
+                    element: <Connect onConnect={connectWallet} />,
                 },
                 {
                     path: "claim/:p_commitHash",
@@ -126,6 +99,10 @@ export default function App() {
                     path: "claim/reveal",
                     element: <RevealClaim />,
                 },
+                {
+                    path: "about",
+                    element: <About />,
+                },
             ],
         },
     ];
@@ -134,7 +111,7 @@ export default function App() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <AppContext.Provider value={{ iKnewThat, helia, provider }}>
+            <AppContext.Provider value={{ iKnewThat, helia, wallet }}>
                 <RouterProvider router={router} />
             </AppContext.Provider>
         </QueryClientProvider>

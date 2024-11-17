@@ -46,3 +46,14 @@ export const timeDeltaFormat = (dateTime) => {
         return Math.round(years) + "years ago";
     }
 }
+
+export const onSearchClaim = (value: string, navigate) => {
+    const isBytes32 = (str => /^0x[A-F0-9]{64}$/i.test(str));
+    if (String(parseInt(value)) === value) {
+      navigate(`/claim/id/${value}`);
+    } else if (isBytes32(value)){
+      navigate(`/claim/${value}`);
+    } else {
+      alert("Invalid Input");
+    }
+}
