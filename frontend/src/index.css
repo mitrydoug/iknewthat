@@ -248,3 +248,7 @@ a {
     border-top: 1px solid lightgray;
     margin: 10px 10px;
 }
+
+.connect-modal .ant-modal-footer {
+    margin: 0px;
+}

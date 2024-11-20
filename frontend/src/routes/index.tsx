@@ -12,7 +12,7 @@ const Index = () => {
 
     return (
         <Flex vertical align="center" justify="center" gap="middle" style={{ height: "70%" }}>
-            <Typography.Text style={{ color: "gray", fontSize: "36px" }}>Find a claim</Typography.Text>
+            <Typography.Text style={{ color: "gray", fontSize: "36px", fontFamily: "system-ui" }}>Find a claim</Typography.Text>
             <Search
                 style={{ display: "block", maxWidth: "50rem" }}
                 placeholder="Claim id or commitment hash"
@@ -26,12 +26,8 @@ const Index = () => {
             />
             <Flex justify="center" align="baseline" gap="small">
               <Typography.Text style={{ color: "gray" }}>Or ...</Typography.Text>
-              <Link to="/claim/create">
-                <Button>Create Claim</Button>
-              </Link>
-              <Link to="/claim/reveal">
-                <Button>Reveal Claim</Button>
-              </Link>
+              <Button onClick={() => navigate("/claim/create")}>Create Claim</Button>
+              <Button onClick={() => navigate("/claim/reveal")}>Reveal Claim</Button>
             </Flex>
             <Link to="/about" style={{ marginTop: "20px", color: "gray", textDecoration: "underline dotted" }}>
                 What is iKnewThat?

@@ -1,29 +1,44 @@
-import { Flex, Button, Typography } from "antd";
+import { Image, Modal, Button, Typography } from "antd";
 import { AppContext } from "../AppContext";
-import { FC, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { FC, useCallback, useContext, useEffect, useState } from "react";
+import { Link, } from "react-router-dom";
+
+const baseUrl = import.meta.env.BASE_URL;
 
 interface ConnectProps {
-    onConnect: () => void;
-}
+};
 
-const Connect: FC<ConnectProps> = ({ onConnect }) => {
+const Connect: FC<ConnectProps> = () => {
 
-    const { iKnewThat, wallet: { provider } } = useContext(AppContext);
-    const navigate = useNavigate();
+    const { wallet: { connectWallet, provider, walletState, connectionRequest, setConnectionRequest } } = useContext(AppContext);
 
-    console.log(onConnect);
+    const isModalOpen = !!connectionRequest;
+
+    const handleCancel = useCallback(() => {
+        setConnectionRequest(null);
+    }, []);
+
+    const handleOk = useCallback(async () => {
+        await connectWallet();
+        setConnectionRequest(null);
+    }, []);
 
     return (
-        <Flex vertical align="center" justify="center" gap="middle" style={{ height: "70%" }}>
+        <Modal className="connect-modal" open={isModalOpen} onOk={handleOk} onCancel={handleCancel} closable={false} footer={<></>} centered>
             { !provider ?
                 <Typography.Text style={{ fontSize: "20px" }}>No wallet detected. Please install (or enable) <a href="https://metamask.io">MetaMask</a>.</Typography.Text> :
-                !iKnewThat ?
-                    <Button type="primary" size="large" onClick={() => { onConnect(); navigate("/"); }}>Connect with MetaMask</Button> :
-                    <Typography.Text style={{ fontSize: "20px" }}>Already Connected! Go to <Link to="/">home page</Link>.</Typography.Text> 
-            
-                }  
-        </Flex>
+                walletState === "not_connected" ? (
+                    <Button onClick={handleOk} style={{ width: "100%", height: "3rem" }}>
+                        <Image id="logo" style={{ maxHeight: "3rem" }} src={`${baseUrl}/MetaMask_Fox.svg`} preview={false} />
+                        Connect with MetaMask
+                    </Button>
+                ) : (
+                    <Typography.Text style={{ fontSize: "20px" }}>
+                        Already Connected! Go to <Link to="/">home page</Link>.
+                    </Typography.Text>
+                )
+            }
+        </Modal>
     );
 }
 

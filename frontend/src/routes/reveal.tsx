@@ -1,7 +1,7 @@
-import { useContext, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { SelectOutlined, CheckOutlined } from '@ant-design/icons';
-import { Avatar, Button, Flex, Form, Image, Input, Modal, Space, Typography, Upload } from 'antd';
+import { useContext, useEffect, useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { SelectOutlined, CheckOutlined, PaperClipOutlined, EyeOutlined } from '@ant-design/icons';
+import { Button, Flex, Form, Image, Input, Modal, Space, Typography, Upload } from 'antd';
 import { AppContext } from "../AppContext"
 import { TarReader } from "@gera2ld/tarjs"
 import { create } from '@web3-storage/w3up-client'
@@ -11,9 +11,11 @@ import { ethers } from "ethers";
 
 // ipfs
 import { CarReader } from '@ipld/car'
+import Loading from "../components/Loading";
 
-const { Title } = Typography;
+const { Title, Paragraph } = Typography;
 const { confirm } = Modal;
+const { Dragger } = Upload;
 
 const baseUrl = import.meta.env.BASE_URL;
 
@@ -71,14 +73,20 @@ export default function RevealClaim() {
 
   const [ w3sModalOpen, setW3sModalOpen ] = useState(false);
   const [ waitEmail, setWaitEmail] = useState(false);
-  const { iKnewThat } = useContext(AppContext);
+  const { iKnewThat, wallet: { walletState, setConnectionRequest } } = useContext(AppContext);
   const [ W3SClient, setW3SClient ] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const [myClaims, setMyClaims] = useLocalStorage("myClaims", {});
 
-  if (iKnewThat === null) {
-    return <Navigate to="/connect" replace />
+  useEffect(() => {
+    if (walletState === "not_connected") {
+      setConnectionRequest({ required: true});
+    }
+  }, []);
+
+  if (!iKnewThat) {
+    return <Loading />;
   }
 
   const dummyRequest = ({ onSuccess }) => {
@@ -106,9 +114,16 @@ export default function RevealClaim() {
 
   if (W3SClient === null) {
     create().then((client) => setW3SClient(client));
-    console.log(W3SClient);
-    console.log(W3SClient && W3SClient.accounts());
   }
+
+  if (W3SClient && Object.keys(W3SClient.accounts()).length === 0) {
+    console.log("here");
+    if (!w3sModalOpen) {
+      setW3sModalOpen(true);
+    }
+  }
+
+  console.log(W3SClient ? W3SClient.accounts() : null);
 
   const connectW3S = async (email) => {
     console.log(email);
@@ -136,35 +151,32 @@ export default function RevealClaim() {
     console.log(client.spaces());
     console.log(client.currentSpace());
 
+    setW3SClient(client);
     setWaitEmail(false);
     setW3sModalOpen(false);
   }
     
   return (
     <>
-      <Space direction="vertical">
+      <Space direction="vertical" style={{ width: "100%" }}>
         <Title level={2}>Reveal Claim</ Title>
-        <Flex gap="middle">
-          <Avatar icon={<Image src={`${baseUrl}/web3storage_logo.png`} preview={false} />}/>
-          {W3SClient && Object.keys(W3SClient.accounts()).length > 0 ?
-            <CheckOutlined style={{ color: "green" }}/> :
-            <Button onClick={showW3sModal}>Connect Web3Storage</Button>}
-        </Flex>
         <Form
           layout="horizontal"
           onSubmitCapture={(event) => { console.log("Hello?"); event.preventDefault(); }}
           onFinish={submitForm}
         >
           <Form.Item name="claim-file">
-            <Upload
-              accept=".claim"
-              action={async (_file) => { return null; }}
+            <Dragger file
+              style={{ display: 'block' }}
               customRequest={dummyRequest}
             >
-              <Button icon={<SelectOutlined />}>Choose Claim</Button>
-            </Upload>
+              <EyeOutlined style={{fontSize: 36, color: '#aaaaaa'}}/>
+              <p className="ant-upload-text" style={{color: '#aaaaaa'}}>Choose a claim to reveal.</p>
+            </Dragger>
           </Form.Item>
-          <Button id="submit-claim-btn" type="primary" htmlType="submit">Reveal</Button>
+          <Flex justify="flex-end">
+            <Button id="submit-claim-btn" type="primary" htmlType="submit">Reveal</Button>
+          </Flex>
         </Form>
       </Space>
       <Modal
@@ -174,12 +186,15 @@ export default function RevealClaim() {
         confirmLoading={waitEmail}
         onCancel={() => { setW3sModalOpen(false); }}
       >
+        <Paragraph>
+          iKnewThat uses <Link href="https://web3.storage/">Web3Storage</Link> to store your revealed claim files. Enter your email address below and click "Ok". You will recieve an email from Web3Storage. Click on the link in that email to verify your email, and then return to this page to continue.
+        </Paragraph>
         <Form
           form={form}
           onSubmitCapture={(event) => { event.preventDefault(); }}
           onFinish={(values) => { connectW3S(values["email-address"]); }}
         >
-          <Form.Item label="Email Address" name="email-address">
+          <Form.Item name="email-address">
             <Input type="text" placeholder="jdoe@example.com" />
           </Form.Item>
         </Form>

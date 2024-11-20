@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Button, Spin, Typography } from "antd";
 
 import {
@@ -26,7 +26,6 @@ import CreateClaim from "./routes/create";
 import RevealClaim  from "./routes/reveal";
 import Index from "./routes/index";
 import About from "./routes/about";
-import Connect from "./routes/connect";
 import { useWallet } from "./wallet";
 
 const baseUrl = import.meta.env.BASE_URL;
@@ -34,9 +33,14 @@ const baseUrl = import.meta.env.BASE_URL;
 export default function App() {
 
     const wallet = useWallet();
-    const { provider, walletState, connectWallet } = wallet;
+    const { provider, walletState } = wallet;
     const [helia, setHelia] = useState(null);
     const [iKnewThat, setIKnewThat] = useState(null);
+    const [connectionRequested, setConnectionRequested] = useState(false);
+
+    const requestConnection = useCallback(() => {
+        setConnectionRequested(true);
+    }, []);
 
     useEffect(() => {
         if (provider && walletState === "connected") {
@@ -72,16 +76,12 @@ export default function App() {
     const routes = [
         {
             path: "/",
-            element: <Root />,
+            element: <Root/>,
             errorElement: <ErrorPage />,
             children: [
                 {
                     index: true,
                     element: <Index />,
-                },
-                {
-                    path: "connect",
-                    element: <Connect onConnect={connectWallet} />,
                 },
                 {
                     path: "claim/:p_commitHash",

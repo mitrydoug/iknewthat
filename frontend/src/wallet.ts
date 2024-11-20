@@ -1,15 +1,17 @@
 
+import React from "react";
 import { useCallback, useState, useMemo } from "react";
 import { ethers } from "ethers";
-import { set } from "@web3-storage/w3up-client/dist/src/capability/plan";
-
-
 
 export const useWallet = () => {
 
     const [walletState, setWalletState] = useState("unknown");
     const [signer, setSigner] = useState(null);
     const [address, setAddress] = useState(null);
+    const [connectionRequest, setConnectionRequest] = useState(null);
+    
+    // children can make a request though!
+    //setConnectionRequest(null);
 
     const provider = useMemo(() => {
         if (window.ethereum) {
@@ -21,7 +23,7 @@ export const useWallet = () => {
         }
     }, [window.ethereum]);
 
-    const setupWalletState = useCallback((connect=false) => {
+    const setupWalletState = useCallback(async (connect=false) => {
         if (!provider) { return; }
     
         const setupConnect = async () => {
@@ -33,15 +35,15 @@ export const useWallet = () => {
         }
     
         if (connect) {
-            setupConnect();
+            await setupConnect();
         } else {
-            provider.listAccounts().then((accounts) => {
+            provider.listAccounts().then(async (accounts) => {
                 if (accounts.length === 0) {
                     setWalletState("not_connected");
                     setSigner(null);
                     setAddress(null);
                 } else {
-                    setupConnect();
+                    await setupConnect();
                 }
             });
         }
@@ -61,5 +63,7 @@ export const useWallet = () => {
         signer,
         address,
         walletState,
+        connectionRequest,
+        setConnectionRequest,
     }
 }
