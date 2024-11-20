@@ -207,7 +207,7 @@ body {
 }
 
 #logo {
-    max-width: 14.5rem;
+    max-width: 10rem;
 }
 
 .ant-upload-wrapper {
@@ -240,4 +240,15 @@ body {
 
 a {
     color: steelblue !important;
+}
+
+.footer {
+    height: 4rem;
+    min-height: 4rem;
+    border-top: 1px solid lightgray;
+    margin: 10px 10px;
+}
+
+.connect-modal .ant-modal-footer {
+    margin: 0px;
 }

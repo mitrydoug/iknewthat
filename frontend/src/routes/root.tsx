@@ -1,38 +1,29 @@
-import { Link, Outlet, redirect, useSubmit } from "react-router-dom";
-import { Button, Col, Flex, Layout, Image, Input, Row } from "antd";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Avatar, Button, Flex, Layout, Image, Input, Popover, Typography } from "antd";
+import { EyeOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
+import { FC, useContext, useEffect, useState } from "react";
+import { AppContext } from "../AppContext";
+import { onSearchClaim } from "../utils";
+import jazzicon from "@metamask/jazzicon";
+import Connect from "../routes/connect";
 
 const { Search } = Input;
-const { Header, Footer, Content } = Layout;
+const { Header, Content } = Layout;
 
 const baseUrl = import.meta.env.BASE_URL;
-
-export const lookup = async ({ request }) => {
-  const formData = Object.fromEntries(await request.formData());
-  const isBytes32 = (str => /^0x[A-F0-9]{64}$/i.test(str));
-  console.log(formData);
-  if (!isNaN(formData.commitOrId) && String(parseInt(formData.commitOrId)) === formData.commitOrId) {
-    return redirect(`/claim/id/${formData.commitOrId}`);
-  } else if (isBytes32(formData.commitOrId)){
-    return redirect(`/claim/${formData.commitOrId}`);
-  } else {
-    alert("Invalid Input");
-    return redirect('/');
-  }
-}
 
 const headerStyle = {
   boxShadow: '1px 1px 10px hsla(0, 0%, 0%, 0.2)',
   backgroundColor: '#ffffff',
-  padding: '10px',
+  padding: '10px 20px',
   display: 'flex',
-  height: '80px',
 };
 
 const contentStyle = {
   // textAlign: 'center',
   // minHeight: 120,
-  lineHeight: '120px',
   marginTop: '10px',
+  overflowY: 'auto',
 };
 
 const footerStyle = {
@@ -42,54 +33,94 @@ const footerStyle = {
 };
 
 
+const metamaskIcon = (address) => {
+  console.log(address);
+  const jazziconData = jazzicon(16, parseInt(address.slice(2, 10), 16));
+  const jazziconSvg = new XMLSerializer().serializeToString(jazziconData.children[0]);
+  return `data:image/svg+xml,${encodeURIComponent(jazziconSvg)}`;
+}
 
-export default function Root() {
+interface RootProps {
+};
 
-  const submit = useSubmit();
+
+const Root: FC<RootProps> = () => {
+
+  const navigate = useNavigate();
+
+  const [avatar, setAvatar] = useState(null);
+  const { wallet: { address, walletState, setConnectionRequest }  } = useContext(AppContext);
+  const location = useLocation();
+  
+  const isIndex = location.pathname === "/";
+
+  useEffect(() => {
+    if (address) {
+      setAvatar(metamaskIcon(address));
+    } else {
+      setAvatar(null);
+    }
+
+  }, [address]);
+
+  const popoverContent = (
+    walletState === "connected" ?
+        <span style={{ fontSize: "20px", }}>{address.slice(0, 5) + "..." + address.slice(-5)}</span>
+       :
+      <Button type="primary" onClick={() => setConnectionRequest({ required: false }) }>Connect</Button>
+  );
+
 
   return (
-      <Layout style={{ height: '100vh' }}>
-        <Header style={headerStyle}>
-          <Row align="middle" style={{ width: "100%" }} gutter={24}>
-            <Col flex="auto">
-              <Flex justify="flex-end">
-                <a href={baseUrl}><Image id="logo" src={`${baseUrl}/logo.png`} preview={false} /></a>
+      <>
+        <Layout style={{ height: "100vh" }}>
+          <Header style={headerStyle}>
+            <Flex align="center" gap="middle" justify="space-between" style={{ width: "100%" }} wrap={false}>
+                <div style={{ textAlign: "left" }}>
+                  <Link to="/"><Image id="logo" src={`${baseUrl}/logo.svg`} preview={false} /></Link>
+                </div>
+                <div style={{ flex: "1" }}>
+                  <Search
+                    className="top-search"
+                    style={{ display: isIndex ? "none" : "block", maxWidth: "30rem" }}
+                    placeholder="Claim id or commitment hash"
+                    allowClear
+                    onSearch={(value, _event, { source }) => {
+                      if (source === "input") {
+                        onSearchClaim(value, navigate);
+                      }
+                    }}
+                    size="medium"
+                  />
+                </div>
+                <Flex gap="small" align="center">
+                  <Button onClick={() => navigate("/claim/create")} style={{ padding: "10px" }}>Create Claim</Button>
+                  <Button onClick={() => navigate("/claim/reveal")} style={{ padding: "10px" }}>Reveal Claim</Button>
+                </Flex>
+                <Popover content={popoverContent}>
+                  { avatar ?
+                      <Avatar size="large" src={<img src={avatar} alt="avatar" />} /> :
+                      <Avatar size="large" icon={ <UserOutlined /> } /> }
+                </Popover>
+            </Flex>
+          </Header>
+          <Content style={contentStyle}>
+            <Flex vertical style={{ height: "100%" }}>
+              <div style={{ maxWidth: "50rem", margin: "auto", flex: "1", width: "100%" }}>
+                <Outlet />
+              </div>
+              <Flex className="footer" justify="center" align="center" gap="large">
+                <Typography.Text style={{ color: "gray" }}>Created by Mitchell Douglass</Typography.Text>
+                <a href="https://github.com/mitrydoug/iknewthat" target="_blank" rel="noreferrer">
+                  <Image src={`${baseUrl}/github-mark.svg`} preview={false} style={{ width: "2rem" }}/>
+                </a>
               </Flex>
-            </Col>
-            <Col flex="50rem">
-              <Flex align="center" >
-                <Search
-                  placeholder="input search text"
-                  allowClear
-                  onSearch={(value, _event, { source }) => {
-                    if (source === "input") {
-                      submit({commitOrId: value}, { method: "post" });
-                    }
-                  }}
-                  size="medium"
-                />
-              </Flex>
-            </Col>
-            <Col flex="auto">
-              <Flex align="center" gap="middle">
-                <Link to="/claim/create">
-                  <Button>Make Claim</Button>
-                </Link>
-                <Link to="/claim/reveal">
-                  <Button>Reveal Claim</Button>
-                </Link>
-              </Flex>
-            </Col>
-          </Row>
-        </Header>
-        <Content style={contentStyle}>
-          <Row justify="center" style={{width: '100%'}}>
-            <Col flex="50rem">
-              <Outlet />
-            </Col>
-          </Row>
-        </Content>
-        <Footer style={footerStyle}>Made by Mitchell Douglass</Footer>
-      </Layout>
+            </Flex>
+          </Content>
+        </Layout>
+        <Connect />
+      </>
   );
 }
+
+export default Root;
