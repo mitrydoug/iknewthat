@@ -4,7 +4,7 @@ import { timeDeltaFormat } from "../utils";
 import { Loading } from "../components/Loading";
 import { AppContext, AppState } from "../AppContext"
 import { useContext, useState } from "react";
-import { Card, Flex, Tag, Tooltip, Typography } from "antd";
+import { Card, Flex, Space, Tag, Tooltip, Typography } from "antd";
 import { EyeOutlined, EyeInvisibleOutlined, FileImageOutlined, SyncOutlined } from '@ant-design/icons';
 import { useQuery } from "@tanstack/react-query";
 import { useLocalStorage } from "../localStorage";
@@ -42,8 +42,13 @@ export default function Claim() {
   const { iKnewThat, helia } = useContext(AppContext) as AppState;
   const { p_claimId, p_commitHash } = useParams();
 
+  if (!iKnewThat || !helia) {
+    return <Loading />;
+  }
+
   return (
     <ClaimImpl
+      key={[p_claimId, p_commitHash]}
       iKnewThat={iKnewThat}
       helia={helia}
       p_claimId={p_claimId}
@@ -53,7 +58,10 @@ export default function Claim() {
 
 const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHash }) => {
 
+  console.log(p_claimId, p_commitHash);
+
   const [commitHash, setCommitHash] = useState(p_commitHash ?? null);
+  console.log(commitHash);
   const [claim, setClaim] = useState<Claim | null>(null);
   const [myClaims, _setMyClaims] = useLocalStorage("myClaims", {});
   console.log(myClaims);
@@ -173,7 +181,11 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
       });
     }, 2000);
   } else {
-    return <div>Claim not found</div>;
+    return (
+      <Space align="center" direction="vertical" style={{ width: "100%" }}>
+        <Title level={2}>Claim not found</Title>
+      </Space>
+    );
   }
 
   const deltaText = commitTime ? timeDeltaFormat(commitTime): null;
@@ -202,7 +214,7 @@ const ClaimImpl: FC<ClaimImplProps> = ({ iKnewThat, helia, p_claimId, p_commitHa
             <Meta
               avatar={<FileImageOutlined />}
               title={<Tooltip title={fileName} mouseEnterDelay={1}>{fileName}</Tooltip>}
-              description="50KB"
+              description=""
             />
           </Card>
         </a>

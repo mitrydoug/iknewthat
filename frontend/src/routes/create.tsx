@@ -1,6 +1,6 @@
-import { useCallback, useContext } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, Form, Modal, Typography, Upload } from 'antd';
+import { Button, Input, Flex, Form, Modal, Typography, Upload, Spin } from 'antd';
 import { PaperClipOutlined } from '@ant-design/icons';
 import { AppContext } from "../AppContext";
 import { TarWriter } from '@gera2ld/tarjs';
@@ -14,6 +14,7 @@ import { ethers } from "ethers";
 import { unixfs } from '@helia/unixfs'
 import { CarWriter } from '@ipld/car'
 import { car } from '@helia/car'
+import Loading from "../components/Loading";
 
 const { Dragger } = Upload;
 const { TextArea } = Input;
@@ -117,7 +118,7 @@ export const createClaim = (iKnewThat, helia, myClaims, setMyClaims) => async (v
   tarWriter.addFile(title_path + ".car", carBlob);
   tarWriter.addFile("secret.txt", String(randomValue));
 
-  const hash = ethers.solidityPackedKeccak256(["string", "uint"], [String(rootCID), randomValue]);
+  const commitHash = ethers.solidityPackedKeccak256(["string", "uint"], [String(rootCID), randomValue]);
 
   const a = document.createElement('a');
   a.href = URL.createObjectURL(await tarWriter.write());
@@ -127,26 +128,33 @@ export const createClaim = (iKnewThat, helia, myClaims, setMyClaims) => async (v
   console.log("here");
   console.log(iKnewThat);
 
-  await iKnewThat.commit(hash);
+  const tx = await iKnewThat.commit(commitHash);
 
   console.log("hereeee");
 
   console.log(myClaims);
   const newMyClaims = {...myClaims};
-  newMyClaims[hash] = {
+  newMyClaims[commitHash] = {
     metadata,
     state: "created",
   };
   setMyClaims(newMyClaims);
 
-  return hash;
+  return { tx, commitHash };
 }
 
 
 export default function CreateClaim() {
 
-  const { iKnewThat, helia } = useContext(AppContext);
+  const { iKnewThat, helia, wallet: { walletState, setConnectionRequest } } = useContext(AppContext);
   const [myClaims, setMyClaims] = useLocalStorage("myClaims", {});
+  const [waitForConfirm, setWaitForConfirm] = useState(false);
+
+  useEffect(() => {
+    if (walletState === "not_connected") {
+      setConnectionRequest({ required: true});
+    }
+  }, [])
 
   const navigate = useNavigate();
 
@@ -156,20 +164,29 @@ export default function CreateClaim() {
     }, 0);
   }, []);
 
+  if (!iKnewThat || !helia) {
+    return <Loading />;
+  }
+
   const submitForm = async (values) => {
     confirm({
       title: 'Create claim?',
       content: 'Are you sure you want to create this claim?',
       onOk: (async () => {
-        const hash = await createClaim(iKnewThat, helia, myClaims, setMyClaims)(values);
-        navigate("/claim/" + hash);
+        const {tx, commitHash} = await createClaim(iKnewThat, helia, myClaims, setMyClaims)(values);
+        setWaitForConfirm(true);
+        console.log("waiting for confirmation");
+        await tx.wait();
+        console.log("confirmed");
+        setWaitForConfirm(false);
+        navigate("/claim/" + commitHash);
       }),
     });
   }
 
   return (
     <>
-      <Title level={2}>Make Claim</ Title>
+      <Title level={2}>Create Claim</ Title>
       <Form
         layout="vertical"
         onSubmitCapture={(event) => { event.preventDefault(); }}
@@ -191,8 +208,13 @@ export default function CreateClaim() {
             <p className="ant-upload-text" style={{color: '#aaaaaa'}}>Attach files to this claim</p>
           </Dragger>
         </Form.Item>
-        <Button id="submit-claim-btn" type="primary" htmlType="submit">Submit</Button>
+        <Flex justify="flex-end">
+          <Button id="submit-claim-btn" type="primary" htmlType="submit">Submit</Button>
+        </Flex>
       </Form>
+      <Modal open={waitForConfirm}>
+        <Spin tip="Waiting for confirmation ..." size="large" />
+      </Modal>
     </>
   );
 }
