@@ -17,8 +17,6 @@ const { Title, Paragraph } = Typography;
 const { confirm } = Modal;
 const { Dragger } = Upload;
 
-const baseUrl = import.meta.env.BASE_URL;
-
 export const revealClaim = (iKnewThat, W3SClient, account, myClaims, setMyClaims) => async (values) => {
 
   console.log("Reveal Claim")
