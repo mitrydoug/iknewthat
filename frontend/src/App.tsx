@@ -11,7 +11,7 @@ import IKnewThatArtifact from "./contracts/IKnewThat.json";
 import { AppContext } from "./AppContext" 
 
 import {
-  createBrowserRouter,
+  createHashRouter,
   RouterProvider,
 } from "react-router-dom";
 
@@ -105,7 +105,7 @@ export default function App() {
             ],
         },
     ];
-    const router = createBrowserRouter(routes, { basename: baseUrl });
+    const router = createHashRouter(routes);
     const queryClient = new QueryClient();
 
     return (
