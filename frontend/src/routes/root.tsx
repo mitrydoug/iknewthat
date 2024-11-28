@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Avatar, Button, Flex, Layout, Image, Input, Popover, Typography } from "antd";
+import { Avatar, Button, Flex, Layout, Image, Input, Popover, Tag, Typography, Result } from "antd";
 import { EyeOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
 import { FC, useContext, useEffect, useState } from "react";
 import { AppContext } from "../AppContext";
@@ -15,8 +15,8 @@ const baseUrl = import.meta.env.BASE_URL;
 const headerStyle = {
   boxShadow: '1px 1px 10px hsla(0, 0%, 0%, 0.2)',
   backgroundColor: '#ffffff',
-  padding: '10px 20px',
-  display: 'flex',
+  padding: '0px',
+  // display: 'flex',
 };
 
 const contentStyle = {
@@ -30,6 +30,19 @@ const footerStyle = {
   textAlign: 'center',
   color: '#999999',
   backgroundColor: '#f0f0f0',
+};
+
+const connectToArbitrum = async () => {
+  try {
+    // check if the chain to connect to is installed
+    await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0xA4B1' }],
+    });
+  } catch (error) {
+      console.error(error);
+      window.location.reload();
+  }
 };
 
 
@@ -49,7 +62,7 @@ const Root: FC<RootProps> = () => {
   const navigate = useNavigate();
 
   const [avatar, setAvatar] = useState(null);
-  const { wallet: { address, walletState, setConnectionRequest }  } = useContext(AppContext);
+  const { wallet: { address, network, setConnectionRequest }  } = useContext(AppContext);
   const location = useLocation();
   
   const isIndex = location.pathname === "/";
@@ -63,19 +76,38 @@ const Root: FC<RootProps> = () => {
 
   }, [address]);
 
+  const networkTag = (
+    network === "test" ? (
+      <Tag color="magenta">Test Network</Tag>
+    ) : network === "hardhat" ? (
+      <Tag color="yellow">Hardhat Network</Tag>
+    ) : null
+  )
+
   const popoverContent = (
-    walletState === "connected" ?
-        <span style={{ fontSize: "20px", }}>{address.slice(0, 5) + "..." + address.slice(-5)}</span>
-       :
-      <Button type="primary" onClick={() => setConnectionRequest({ required: false }) }>Connect</Button>
+    address ?
+      <span style={{ fontSize: "20px", }}>{address.slice(0, 5) + "..." + address.slice(-5)}</span>
+      : <Button type="primary" onClick={() => setConnectionRequest({ required: false }) }>Connect</Button>
   );
+
+  const unsupportedNetworkComponent = (
+    <Result
+      status="warning"
+      title="You are connected to an unsupported network."
+      extra={
+        <Button type="primary" onClick={connectToArbitrum}>
+          Switch to Arbitrum
+        </Button>
+      }
+    />
+  )
 
 
   return (
       <>
         <Layout style={{ height: "100vh" }}>
           <Header style={headerStyle}>
-            <Flex align="center" gap="middle" justify="space-between" style={{ width: "100%" }} wrap={false}>
+            <Flex align="center" gap="middle" justify="space-between" style={{ width: "100%", padding: "0px 20px" }} wrap={false}>
                 <div style={{ textAlign: "left" }}>
                   <Link to="/"><Image id="logo" src={`${baseUrl}/logo.svg`} preview={false} /></Link>
                 </div>
@@ -93,6 +125,7 @@ const Root: FC<RootProps> = () => {
                     size="medium"
                   />
                 </div>
+                { networkTag }
                 <Flex gap="small" align="center">
                   <Button onClick={() => navigate("/claim/create")} style={{ padding: "10px" }}>Create Claim</Button>
                   <Button onClick={() => navigate("/claim/reveal")} style={{ padding: "10px" }}>Reveal Claim</Button>
@@ -107,7 +140,7 @@ const Root: FC<RootProps> = () => {
           <Content style={contentStyle}>
             <Flex vertical style={{ height: "100%" }}>
               <div style={{ maxWidth: "50rem", margin: "auto", flex: "1", width: "100%" }}>
-                <Outlet />
+                { network === "unsupported" ? unsupportedNetworkComponent : <Outlet /> }
               </div>
               <Flex className="footer" justify="center" align="center" gap="large">
                 <Typography.Text style={{ color: "gray" }}>Created by Mitchell Douglass</Typography.Text>

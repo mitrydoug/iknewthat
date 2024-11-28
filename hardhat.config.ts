@@ -26,10 +26,16 @@ const config: HardhatUserConfig = {
   networks: {
     ... (INFURA_API_KEY && SEPOLIA_PRIVATE_KEY ?
       {
-        sepolia: {
-          url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
+        arbitrumOne: {
+          url: 'https://arb1.arbitrum.io/rpc',
+          chainId: 42161,
           accounts: [SEPOLIA_PRIVATE_KEY],
-        }
+        },
+        arbitrumSepolia: {
+          url: 'https://sepolia-rollup.arbitrum.io/rpc',
+          chainId: 421614,
+          accounts: [SEPOLIA_PRIVATE_KEY],
+        },
       } : {}
     ),
   },

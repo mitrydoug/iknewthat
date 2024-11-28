@@ -1,0 +1,2 @@
+chain-*/*
+!deployed_addresses.json

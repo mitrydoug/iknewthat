@@ -32,7 +32,7 @@ const baseUrl = import.meta.env.BASE_URL;
 export default function App() {
 
     const wallet = useWallet();
-    const { provider, walletState } = wallet;
+    const { provider, walletState, network } = wallet;
     const [helia, setHelia] = useState(null);
     const [iKnewThat, setIKnewThat] = useState(null);
     const [connectionRequested, setConnectionRequested] = useState(false);
@@ -43,17 +43,19 @@ export default function App() {
 
     useEffect(() => {
         if (provider && walletState === "connected") {
+            console.log(contractAddress);
+            console.log(network);
             provider.getSigner().then(signer => {
                 setIKnewThat(
                     new ethers.Contract(
-                        contractAddress.IKnewThat,
+                        contractAddress.IKnewThat[network],
                         IKnewThatArtifact.abi,
                         signer,
                     )
                 );
             });
         }
-    }, [walletState]);
+    }, [walletState, network]);
 
     console.log(iKnewThat);
 
