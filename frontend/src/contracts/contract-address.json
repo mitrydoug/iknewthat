@@ -1,3 +1,7 @@
 {
-    "IKnewThat": "0xC1354de5Ad4793A0eB86e6D9431BC4F06AD1906a"
+    "IKnewThat": {
+        "hardhat": "0xC1354de5Ad4793A0eB86e6D9431BC4F06AD1906a",
+        "test": "0x5eF8B8c4b297d0D0CCE8e76396ceAa06d59932ee",
+        "main": "0x5eF8B8c4b297d0D0CCE8e76396ceAa06d59932ee"
+    }
 }
